@@ -1,0 +1,54 @@
+[
+  {
+    "ContainingType": "Mawasem.API.Controllers.SeasonsController",
+    "Method": "CreateSeason",
+    "RelativePath": "api/Seasons",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Mawasem.API.Controllers.CreateSeasonRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Mawasem.API.Controllers.SeasonsController",
+    "Method": "GetAllSeasons",
+    "RelativePath": "api/Seasons",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Mawasem.API.Controllers.SeasonsController",
+    "Method": "ActivateSeason",
+    "RelativePath": "api/Seasons/{id}/activate",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Mawasem.API.Controllers.SeasonsController",
+    "Method": "GetActiveSeason",
+    "RelativePath": "api/Seasons/active",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  }
+]

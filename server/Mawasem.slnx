@@ -1,0 +1,12 @@
+<Solution>
+  <Project Path="Mawasem.API/Mawasem.API.csproj" />
+  <Project Path="Mawasem.Infrastructure/Mawasem.Infrastructure.csproj" />
+  <Project Path="Mawasem.Modules.Catalog/Mawasem.Modules.Catalog.csproj" />
+  <Project Path="Mawasem.Modules.Delivery/Mawasem.Modules.Delivery.csproj" />
+  <Project Path="Mawasem.Modules.Orders/Mawasem.Modules.Orders.csproj" />
+  <Project Path="Mawasem.Modules.Payments/Mawasem.Modules.Payments.csproj" />
+  <Project Path="Mawasem.Modules.Season/Mawasem.Modules.Season.csproj" />
+  <Project Path="Mawasem.Modules.Users/Mawasem.Modules.Users.csproj" />
+  <Project Path="Mawasem.Shared/Mawasem.Shared.csproj" />
+  <Project Path="Mawasem.Tests/Mawasem.Tests.csproj" />
+</Solution>

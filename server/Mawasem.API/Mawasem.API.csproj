@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.8">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mawasem.Infrastructure\Mawasem.Infrastructure.csproj" />
+    <ProjectReference Include="..\Mawasem.Modules.Catalog\Mawasem.Modules.Catalog.csproj" />
+    <ProjectReference Include="..\Mawasem.Modules.Delivery\Mawasem.Modules.Delivery.csproj" />
+    <ProjectReference Include="..\Mawasem.Modules.Orders\Mawasem.Modules.Orders.csproj" />
+    <ProjectReference Include="..\Mawasem.Modules.Payments\Mawasem.Modules.Payments.csproj" />
+    <ProjectReference Include="..\Mawasem.Modules.Season\Mawasem.Modules.Season.csproj" />
+    <ProjectReference Include="..\Mawasem.Modules.Users\Mawasem.Modules.Users.csproj" />
+  </ItemGroup>
+
+</Project>
