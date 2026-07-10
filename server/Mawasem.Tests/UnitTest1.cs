@@ -1,4 +1,4 @@
-﻿namespace Mawasem.Tests
+namespace Mawasem.Tests
 {
     public class UnitTest1
     {

@@ -1,29 +1,40 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.8" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.8">
-      <PrivateAssets>all</PrivateAssets>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.28">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.28" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Mawasem.Application\Mawasem.Application.csproj" />
+    <ProjectReference Include="..\Mawasem.Domain\Mawasem.Domain.csproj" />
     <ProjectReference Include="..\Mawasem.Infrastructure\Mawasem.Infrastructure.csproj" />
-    <ProjectReference Include="..\Mawasem.Modules.Catalog\Mawasem.Modules.Catalog.csproj" />
-    <ProjectReference Include="..\Mawasem.Modules.Delivery\Mawasem.Modules.Delivery.csproj" />
-    <ProjectReference Include="..\Mawasem.Modules.Orders\Mawasem.Modules.Orders.csproj" />
-    <ProjectReference Include="..\Mawasem.Modules.Payments\Mawasem.Modules.Payments.csproj" />
-    <ProjectReference Include="..\Mawasem.Modules.Season\Mawasem.Modules.Season.csproj" />
-    <ProjectReference Include="..\Mawasem.Modules.Users\Mawasem.Modules.Users.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+	<Folder Include="Controllers\" />
+	<Folder Include="Configurations\" />
+    <Folder Include="Extensions\" />
+    <Folder Include="Filters\" />
+    <Folder Include="Helpers\" />
+    <Folder Include="Middleware\" />
+    <Folder Include="Contracts\" />
+    <Folder Include="wwwroot\uploads\categories\" />
+    <Folder Include="wwwroot\uploads\users\" />
+    <Folder Include="wwwroot\uploads\seasons\" />
+    <Folder Include="wwwroot\uploads\products\" />
+  </ItemGroup>
+
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="https://wixplosives.github.io/codux-config-schema/codux.config.schema.json" /></VisualStudio></ProjectExtensions>
 
 </Project>

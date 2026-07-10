@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/docs/" />
+  <Folder Name="/src/">
+    <Project Path="Mawasem.API/Mawasem.API.csproj" />
+    <Project Path="Mawasem.Application/Mawasem.Application.csproj" />
+    <Project Path="Mawasem.Domain/Mawasem.Domain.csproj" />
+    <Project Path="Mawasem.Infrastructure/Mawasem.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="Mawasem.Tests/Mawasem.Tests.csproj" />
+  </Folder>
+</Solution>
