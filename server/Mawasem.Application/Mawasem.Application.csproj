@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mawasem.Domain\Mawasem.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Common\Responses\" />
+    <Folder Include="Features\Authentication\" />
+    <Folder Include="Features\Categories\" />
+    <Folder Include="Features\Cart\" />
+    <Folder Include="Features\Delivery\" />
+    <Folder Include="Features\Collections\" />
+    <Folder Include="Features\Brands\" />
+    <Folder Include="Features\Reviews\" />
+    <Folder Include="Features\Payments\" />
+    <Folder Include="Features\Orders\" />
+    <Folder Include="Features\Products\" />
+    <Folder Include="Features\Seasons\" />
+  </ItemGroup>
+
+</Project>

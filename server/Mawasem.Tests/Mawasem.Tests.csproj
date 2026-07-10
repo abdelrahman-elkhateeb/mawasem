@@ -1,27 +1,26 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
     <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="6.0.4" />
-    <PackageReference Include="FluentAssertions" Version="8.10.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
-    <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Mawasem.API\Mawasem.API.csproj" />
+    <ProjectReference Include="..\Mawasem.Application\Mawasem.Application.csproj" />
+    <ProjectReference Include="..\Mawasem.Domain\Mawasem.Domain.csproj" />
     <ProjectReference Include="..\Mawasem.Infrastructure\Mawasem.Infrastructure.csproj" />
-    <ProjectReference Include="..\Mawasem.Modules.Catalog\Mawasem.Modules.Catalog.csproj" />
-    <ProjectReference Include="..\Mawasem.Modules.Delivery\Mawasem.Modules.Delivery.csproj" />
-    <ProjectReference Include="..\Mawasem.Modules.Orders\Mawasem.Modules.Orders.csproj" />
-    <ProjectReference Include="..\Mawasem.Modules.Season\Mawasem.Modules.Season.csproj" />
-    <ProjectReference Include="..\Mawasem.Modules.Users\Mawasem.Modules.Users.csproj" />
   </ItemGroup>
 
   <ItemGroup>
