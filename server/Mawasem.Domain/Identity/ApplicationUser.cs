@@ -24,9 +24,18 @@ public class ApplicationUser : IdentityUser<int>
 
     public string? BlockedReason { get; set; }
 
-    public ICollection<UserAddress> Addresses { get; set; } = new List<UserAddress>();
+    public ICollection<UserAddress> Addresses { get; set; } =
+        new List<UserAddress>();
 
-    public ICollection<Order> Orders { get; set; } = new List<Order>();
+    public ICollection<Order> Orders { get; set; } =
+        new List<Order>();
 
-    public ICollection<Review> Reviews { get; set; } = new List<Review>();
+    public ICollection<Review> Reviews { get; set; } =
+        new List<Review>();
+
+    public ICollection<RefreshToken> RefreshTokens { get; set; } =
+        new List<RefreshToken>();
+
+    public ICollection<PasswordResetCode> PasswordResetCodes { get; set; } =
+        new List<PasswordResetCode>();
 }

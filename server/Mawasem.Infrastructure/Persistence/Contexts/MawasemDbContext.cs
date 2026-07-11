@@ -18,7 +18,8 @@ public class MawasemDbContext
 
     #region Catalog
 
-    public DbSet<Product> Products => Set<Product>();
+    public DbSet<Product> Products =>
+        Set<Product>();
 
     public DbSet<ProductVariant> ProductVariants =>
         Set<ProductVariant>();
@@ -29,17 +30,23 @@ public class MawasemDbContext
     public DbSet<ProductSpecification> ProductSpecifications =>
         Set<ProductSpecification>();
 
-    public DbSet<Brand> Brands => Set<Brand>();
+    public DbSet<Brand> Brands =>
+        Set<Brand>();
 
-    public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Category> Categories =>
+        Set<Category>();
 
-    public DbSet<Collection> Collections => Set<Collection>();
+    public DbSet<Collection> Collections =>
+        Set<Collection>();
 
-    public DbSet<Season> Seasons => Set<Season>();
+    public DbSet<Season> Seasons =>
+        Set<Season>();
 
-    public DbSet<Tag> Tags => Set<Tag>();
+    public DbSet<Tag> Tags =>
+        Set<Tag>();
 
-    public DbSet<Grade> Grades => Set<Grade>();
+    public DbSet<Grade> Grades =>
+        Set<Grade>();
 
     public DbSet<ProductCategory> ProductCategories =>
         Set<ProductCategory>();
@@ -81,6 +88,16 @@ public class MawasemDbContext
 
     #endregion
 
+    #region Authentication
+
+    public DbSet<RefreshToken> RefreshTokens =>
+        Set<RefreshToken>();
+
+    public DbSet<PasswordResetCode> PasswordResetCodes =>
+        Set<PasswordResetCode>();
+
+    #endregion
+
     #region Authorization
 
     public DbSet<Permission> Permissions =>
@@ -91,7 +108,8 @@ public class MawasemDbContext
 
     #endregion
 
-    protected override void OnModelCreating( ModelBuilder builder )
+    protected override void OnModelCreating(
+        ModelBuilder builder )
     {
         base.OnModelCreating(builder);
 
