@@ -3,6 +3,7 @@ using Mawasem.Application.Features.Authentication.Options;
 using Mawasem.Domain.Identity;
 using Mawasem.Infrastructure.Authentication;
 using Mawasem.Infrastructure.Persistence.Contexts;
+using Mawasem.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -173,6 +174,13 @@ builder.Services.AddScoped<
     ITokenService ,
     JwtTokenService>();
 
+builder.Services.AddScoped<
+    ICustomerAuthenticationService ,
+    CustomerAuthenticationService>();
+
+
+builder.Services.AddScoped<IdentityRoleSeeder>();
+
 // ============================================================
 // Controllers
 // ============================================================
@@ -222,6 +230,15 @@ builder.Services.AddSwaggerGen(options =>
 // ============================================================
 
 var app = builder.Build();
+
+await using ( var scope = app.Services.CreateAsyncScope() )
+{
+    var roleSeeder =
+        scope.ServiceProvider
+            .GetRequiredService<IdentityRoleSeeder>();
+
+    await roleSeeder.SeedAsync();
+}
 
 if ( app.Environment.IsDevelopment() )
 {
