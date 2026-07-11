@@ -89,6 +89,61 @@ public sealed class AuthController : ControllerBase
         return Ok(result.Response);
     }
 
+    [AllowAnonymous]
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(
+        CancellationToken cancellationToken )
+    {
+        Request.Cookies.TryGetValue(
+            RefreshTokenCookieName ,
+            out var refreshToken);
+
+        var result =
+            await _authenticationService.RefreshAsync(
+                refreshToken ,
+                GetClientIpAddress() ,
+                cancellationToken);
+
+        if ( !result.Succeeded )
+        {
+            DeleteRefreshTokenCookie();
+
+            return CreateFailureResponse(result);
+        }
+
+        if ( result.Response is null ||
+            string.IsNullOrWhiteSpace(result.RefreshToken) )
+        {
+            DeleteRefreshTokenCookie();
+
+            return CreateUnexpectedFailureResponse();
+        }
+
+        // Replace the old cookie with the rotated refresh token.
+        WriteRefreshTokenCookie(result.RefreshToken);
+
+        return Ok(result.Response);
+    }
+
+    [AllowAnonymous]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(
+        CancellationToken cancellationToken )
+    {
+        Request.Cookies.TryGetValue(
+            RefreshTokenCookieName ,
+            out var refreshToken);
+
+        await _authenticationService.LogoutAsync(
+            refreshToken ,
+            GetClientIpAddress() ,
+            cancellationToken);
+
+        DeleteRefreshTokenCookie();
+
+        return NoContent();
+    }
+
     private void WriteRefreshTokenCookie(
         string refreshToken )
     {
@@ -104,16 +159,27 @@ public sealed class AuthController : ControllerBase
             {
                 HttpOnly = true ,
 
-                // Local HTTP development remains usable.
-                // Production requests must use HTTPS.
+                // Allows local HTTP development.
+                // Production must run through HTTPS.
                 Secure = Request.IsHttps ,
 
                 SameSite = SameSiteMode.Lax ,
                 IsEssential = true ,
-
                 Expires = expiresAt ,
+                Path = "/api/auth"
+            });
+    }
 
-                // Future refresh and logout endpoints will use this path.
+    private void DeleteRefreshTokenCookie()
+    {
+        Response.Cookies.Delete(
+            RefreshTokenCookieName ,
+            new CookieOptions
+            {
+                HttpOnly = true ,
+                Secure = Request.IsHttps ,
+                SameSite = SameSiteMode.Lax ,
+                IsEssential = true ,
                 Path = "/api/auth"
             });
     }
@@ -145,6 +211,9 @@ public sealed class AuthController : ControllerBase
                     StatusCodes.Status409Conflict,
 
                 AuthenticationErrorCodes.InvalidCredentials =>
+                    StatusCodes.Status401Unauthorized,
+
+                AuthenticationErrorCodes.InvalidRefreshToken =>
                     StatusCodes.Status401Unauthorized,
 
                 AuthenticationErrorCodes.AccountBlocked =>

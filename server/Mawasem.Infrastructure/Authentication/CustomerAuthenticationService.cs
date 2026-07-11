@@ -228,16 +228,175 @@ public sealed class CustomerAuthenticationService
             cancellationToken);
     }
 
+    public async Task<AuthenticationSessionResult> RefreshAsync(
+        string? refreshToken ,
+        string? ipAddress ,
+        CancellationToken cancellationToken = default )
+    {
+        if ( string.IsNullOrWhiteSpace(refreshToken) )
+        {
+            return InvalidRefreshToken();
+        }
+
+        var tokenHash =
+            _tokenService.HashRefreshToken(refreshToken);
+
+        var storedToken =
+            await _dbContext.RefreshTokens
+                .Include(token => token.User)
+                .SingleOrDefaultAsync(
+                    token => token.TokenHash == tokenHash ,
+                    cancellationToken);
+
+        if ( storedToken is null )
+        {
+            return InvalidRefreshToken();
+        }
+
+        var now =
+            _timeProvider.GetUtcNow().UtcDateTime;
+
+        if ( storedToken.RevokedAtUtc.HasValue )
+        {
+            // A revoked token that has already been replaced may indicate
+            // that an old token has been copied and reused.
+            if ( !string.IsNullOrWhiteSpace(
+                    storedToken.ReplacedByTokenHash) )
+            {
+                await RevokeAllActiveTokensAsync(
+                    storedToken.UserId ,
+                    now ,
+                    ipAddress ,
+                    "Refresh token reuse detected." ,
+                    cancellationToken);
+
+                await _dbContext.SaveChangesAsync(
+                    cancellationToken);
+            }
+
+            return InvalidRefreshToken();
+        }
+
+        if ( storedToken.ExpiresAtUtc <= now )
+        {
+            return InvalidRefreshToken();
+        }
+
+        var user = storedToken.User;
+
+        if ( user.IsBlocked )
+        {
+            await RevokeAllActiveTokensAsync(
+                user.Id ,
+                now ,
+                ipAddress ,
+                "Account blocked." ,
+                cancellationToken);
+
+            await _dbContext.SaveChangesAsync(
+                cancellationToken);
+
+            return AuthenticationSessionResult.Failure(
+                AuthenticationErrorCodes.AccountBlocked ,
+                "This account has been blocked.");
+        }
+
+        var isCustomer =
+            await _userManager.IsInRoleAsync(
+                user ,
+                SystemRoles.Customer);
+
+        if ( !isCustomer )
+        {
+            return InvalidRefreshToken();
+        }
+
+        await using var transaction =
+            await _dbContext.Database.BeginTransactionAsync(
+                cancellationToken);
+
+        var replacementToken =
+            _tokenService.CreateRefreshToken();
+
+        storedToken.RevokedAtUtc = now;
+        storedToken.RevokedByIp =
+            NormalizeIpAddress(ipAddress);
+        storedToken.ReplacedByTokenHash =
+            replacementToken.TokenHash;
+        storedToken.RevocationReason =
+            "Replaced during refresh-token rotation.";
+
+        _dbContext.RefreshTokens.Add(
+            new RefreshToken
+            {
+                UserId = user.Id ,
+                TokenHash = replacementToken.TokenHash ,
+                CreatedAtUtc = now ,
+                ExpiresAtUtc =
+                    replacementToken.ExpiresAtUtc ,
+                CreatedByIp =
+                    NormalizeIpAddress(ipAddress)
+            });
+
+        var response =
+            await CreateAuthenticationResponseAsync(
+                user ,
+                cancellationToken);
+
+        await _dbContext.SaveChangesAsync(
+            cancellationToken);
+
+        await transaction.CommitAsync(
+            cancellationToken);
+
+        return AuthenticationSessionResult.Success(
+            response ,
+            replacementToken.Token);
+    }
+
+    public async Task LogoutAsync(
+        string? refreshToken ,
+        string? ipAddress ,
+        CancellationToken cancellationToken = default )
+    {
+        if ( string.IsNullOrWhiteSpace(refreshToken) )
+        {
+            return;
+        }
+
+        var tokenHash =
+            _tokenService.HashRefreshToken(refreshToken);
+
+        var storedToken =
+            await _dbContext.RefreshTokens
+                .SingleOrDefaultAsync(
+                    token => token.TokenHash == tokenHash ,
+                    cancellationToken);
+
+        if ( storedToken is null ||
+            storedToken.RevokedAtUtc.HasValue )
+        {
+            return;
+        }
+
+        storedToken.RevokedAtUtc =
+            _timeProvider.GetUtcNow().UtcDateTime;
+
+        storedToken.RevokedByIp =
+            NormalizeIpAddress(ipAddress);
+
+        storedToken.RevocationReason =
+            "Customer logged out.";
+
+        await _dbContext.SaveChangesAsync(
+            cancellationToken);
+    }
+
     private async Task<AuthenticationSessionResult> CreateSessionAsync(
         ApplicationUser user ,
         string? ipAddress ,
         CancellationToken cancellationToken )
     {
-        var accessToken =
-            await _tokenService.CreateAccessTokenAsync(
-                user ,
-                cancellationToken);
-
         var refreshToken =
             _tokenService.CreateRefreshToken();
 
@@ -254,32 +413,74 @@ public sealed class CustomerAuthenticationService
                 CreatedByIp = NormalizeIpAddress(ipAddress)
             });
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-        var roles =
-            await _userManager.GetRolesAsync(user);
-
         var response =
-            new AuthenticationResponse
-            {
-                AccessToken = accessToken.Token ,
-                AccessTokenExpiresAtUtc =
-                    accessToken.ExpiresAtUtc ,
+            await CreateAuthenticationResponseAsync(
+                user ,
+                cancellationToken);
 
-                User = new AuthenticatedUserResponse
-                {
-                    Id = user.Id ,
-                    FullNameAr = user.FullNameAr ,
-                    FullNameEn = user.FullNameEn ,
-                    PhoneNumber = user.PhoneNumber ,
-                    Email = user.Email ,
-                    Roles = roles.ToArray()
-                }
-            };
+        await _dbContext.SaveChangesAsync(
+            cancellationToken);
 
         return AuthenticationSessionResult.Success(
             response ,
             refreshToken.Token);
+    }
+
+    private async Task<AuthenticationResponse>
+        CreateAuthenticationResponseAsync(
+            ApplicationUser user ,
+            CancellationToken cancellationToken )
+    {
+        var accessToken =
+            await _tokenService.CreateAccessTokenAsync(
+                user ,
+                cancellationToken);
+
+        var roles =
+            await _userManager.GetRolesAsync(user);
+
+        return new AuthenticationResponse
+        {
+            AccessToken = accessToken.Token ,
+            AccessTokenExpiresAtUtc =
+                accessToken.ExpiresAtUtc ,
+
+            User = new AuthenticatedUserResponse
+            {
+                Id = user.Id ,
+                FullNameAr = user.FullNameAr ,
+                FullNameEn = user.FullNameEn ,
+                PhoneNumber = user.PhoneNumber ,
+                Email = user.Email ,
+                Roles = roles.ToArray()
+            }
+        };
+    }
+
+    private async Task RevokeAllActiveTokensAsync(
+        int userId ,
+        DateTime revokedAtUtc ,
+        string? ipAddress ,
+        string reason ,
+        CancellationToken cancellationToken )
+    {
+        var activeTokens =
+            await _dbContext.RefreshTokens
+                .Where(token =>
+                    token.UserId == userId &&
+                    token.RevokedAtUtc == null &&
+                    token.ExpiresAtUtc > revokedAtUtc)
+                .ToListAsync(cancellationToken);
+
+        var normalizedIpAddress =
+            NormalizeIpAddress(ipAddress);
+
+        foreach ( var token in activeTokens )
+        {
+            token.RevokedAtUtc = revokedAtUtc;
+            token.RevokedByIp = normalizedIpAddress;
+            token.RevocationReason = reason;
+        }
     }
 
     private AuthenticationSessionResult? ValidateRegistration(
@@ -353,6 +554,13 @@ public sealed class CustomerAuthenticationService
         return AuthenticationSessionResult.Failure(
             AuthenticationErrorCodes.InvalidCredentials ,
             "The phone number or password is incorrect.");
+    }
+
+    private static AuthenticationSessionResult InvalidRefreshToken()
+    {
+        return AuthenticationSessionResult.Failure(
+            AuthenticationErrorCodes.InvalidRefreshToken ,
+            "The refresh token is invalid or has expired.");
     }
 
     private static AuthenticationSessionResult AccountLocked()

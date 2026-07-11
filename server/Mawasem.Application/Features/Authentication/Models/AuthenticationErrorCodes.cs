@@ -14,6 +14,9 @@ public static class AuthenticationErrorCodes
     public const string InvalidCredentials =
         "authentication.invalid_credentials";
 
+    public const string InvalidRefreshToken =
+        "authentication.invalid_refresh_token";
+
     public const string AccountBlocked =
         "authentication.account_blocked";
 

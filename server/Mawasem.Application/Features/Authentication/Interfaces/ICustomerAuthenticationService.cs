@@ -14,4 +14,14 @@ public interface ICustomerAuthenticationService
         LoginCustomerRequest request ,
         string? ipAddress ,
         CancellationToken cancellationToken = default );
+
+    Task<AuthenticationSessionResult> RefreshAsync(
+        string? refreshToken ,
+        string? ipAddress ,
+        CancellationToken cancellationToken = default );
+
+    Task LogoutAsync(
+        string? refreshToken ,
+        string? ipAddress ,
+        CancellationToken cancellationToken = default );
 }
