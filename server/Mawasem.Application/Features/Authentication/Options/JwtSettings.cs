@@ -1,4 +1,4 @@
-﻿namespace Mawasem.API.Configurations;
+﻿namespace Mawasem.Application.Features.Authentication.Options;
 
 public sealed class JwtSettings
 {

@@ -1,5 +1,7 @@
-using Mawasem.API.Configurations;
+using Mawasem.Application.Features.Authentication.Interfaces;
+using Mawasem.Application.Features.Authentication.Options;
 using Mawasem.Domain.Identity;
+using Mawasem.Infrastructure.Authentication;
 using Mawasem.Infrastructure.Persistence.Contexts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -7,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Security.Claims;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,7 +31,6 @@ builder.Services.AddDbContext<MawasemDbContext>(options =>
 builder.Services
     .AddIdentityCore<ApplicationUser>(options =>
     {
-        // Password requirements
         options.Password.RequiredLength = 8;
         options.Password.RequiredUniqueChars = 1;
         options.Password.RequireDigit = true;
@@ -38,19 +38,15 @@ builder.Services
         options.Password.RequireUppercase = true;
         options.Password.RequireNonAlphanumeric = true;
 
-        // Lock an account temporarily after repeated failed logins
         options.Lockout.AllowedForNewUsers = true;
         options.Lockout.MaxFailedAccessAttempts = 5;
         options.Lockout.DefaultLockoutTimeSpan =
             TimeSpan.FromMinutes(15);
 
-        // OTP is not required during normal login
         options.SignIn.RequireConfirmedAccount = false;
         options.SignIn.RequireConfirmedEmail = false;
         options.SignIn.RequireConfirmedPhoneNumber = false;
 
-        // Customer email can remain optional.
-        // Admin email uniqueness will be enforced in admin logic.
         options.User.RequireUniqueEmail = false;
     })
     .AddRoles<ApplicationRole>()
@@ -58,7 +54,6 @@ builder.Services
     .AddEntityFrameworkStores<MawasemDbContext>()
     .AddDefaultTokenProviders();
 
-// Identity password-reset tokens expire after 15 minutes
 builder.Services.Configure<DataProtectionTokenProviderOptions>(
     options =>
     {
@@ -66,7 +61,7 @@ builder.Services.Configure<DataProtectionTokenProviderOptions>(
     });
 
 // ============================================================
-// JWT settings
+// JWT configuration
 // ============================================================
 
 var jwtSection =
@@ -89,11 +84,30 @@ if ( string.IsNullOrWhiteSpace(jwtSettings.Audience) )
         "JWT audience was not configured.");
 }
 
-if ( string.IsNullOrWhiteSpace(jwtSettings.Key) ||
-    Encoding.UTF8.GetByteCount(jwtSettings.Key) < 32 )
+if ( string.IsNullOrWhiteSpace(jwtSettings.Key) )
 {
     throw new InvalidOperationException(
-        "JWT signing key is missing or too short.");
+        "JWT signing key was not configured.");
+}
+
+byte[] jwtKeyBytes;
+
+try
+{
+    jwtKeyBytes =
+        Convert.FromBase64String(jwtSettings.Key);
+}
+catch ( FormatException exception )
+{
+    throw new InvalidOperationException(
+        "JWT signing key must be a valid Base64 value." ,
+        exception);
+}
+
+if ( jwtKeyBytes.Length < 32 )
+{
+    throw new InvalidOperationException(
+        "JWT signing key must contain at least 32 bytes.");
 }
 
 if ( jwtSettings.AccessTokenMinutes <= 0 )
@@ -126,6 +140,7 @@ builder.Services
     .AddJwtBearer(options =>
     {
         options.SaveToken = false;
+        options.RequireHttpsMetadata = true;
 
         options.TokenValidationParameters =
             new TokenValidationParameters
@@ -140,8 +155,7 @@ builder.Services
 
                 ValidateIssuerSigningKey = true ,
                 IssuerSigningKey =
-                    new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtSettings.Key)) ,
+                    new SymmetricSecurityKey(jwtKeyBytes) ,
 
                 ClockSkew = TimeSpan.FromSeconds(30) ,
 
@@ -151,6 +165,13 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+
+// JWT and refresh-token generation
+builder.Services.AddSingleton(TimeProvider.System);
+
+builder.Services.AddScoped<
+    ITokenService ,
+    JwtTokenService>();
 
 // ============================================================
 // Controllers
@@ -210,7 +231,6 @@ if ( app.Environment.IsDevelopment() )
 
 app.UseHttpsRedirection();
 
-// Authentication must come before authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
