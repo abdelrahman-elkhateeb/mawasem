@@ -11,16 +11,24 @@ public class PasswordResetCode
     public PasswordResetChannel Channel { get; set; }
 
     /// <summary>
-    /// Secure hash of the verification code.
-    /// The original code must never be stored.
+    /// Password-hashed verification code.
+    /// The original verification code must never be stored.
     /// </summary>
     public string CodeHash { get; set; } = string.Empty;
+
+    /// <summary>
+    /// SHA-256 hash of the high-entropy reset token.
+    /// The original reset token must never be stored.
+    /// </summary>
+    public string? ResetTokenHash { get; set; }
 
     public DateTime CreatedAtUtc { get; set; }
 
     public DateTime ExpiresAtUtc { get; set; }
 
     public DateTime? VerifiedAtUtc { get; set; }
+
+    public DateTime? ResetTokenExpiresAtUtc { get; set; }
 
     public DateTime? UsedAtUtc { get; set; }
 
@@ -40,4 +48,12 @@ public class PasswordResetCode
         UsedAtUtc is null &&
         RevokedAtUtc is null &&
         !IsExpired;
+
+    public bool IsResetTokenActive =>
+        VerifiedAtUtc is not null &&
+        ResetTokenHash is not null &&
+        ResetTokenExpiresAtUtc is not null &&
+        DateTime.UtcNow < ResetTokenExpiresAtUtc &&
+        UsedAtUtc is null &&
+        RevokedAtUtc is null;
 }
