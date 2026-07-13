@@ -15,32 +15,35 @@ public sealed class IdentityRoleSeeder
 
     public async Task SeedAsync()
     {
-        var customerRoleExists =
-            await _roleManager.RoleExistsAsync(
-                SystemRoles.Customer);
-
-        if ( customerRoleExists )
+        foreach ( var roleName in SystemRoles.All )
         {
-            return;
+            var roleExists =
+                await _roleManager.RoleExistsAsync(roleName);
+
+            if ( roleExists )
+            {
+                continue;
+            }
+
+            var result =
+                await _roleManager.CreateAsync(
+                    new ApplicationRole
+                    {
+                        Name = roleName
+                    });
+
+            if ( result.Succeeded )
+            {
+                continue;
+            }
+
+            var errors = string.Join(
+                "; " ,
+                result.Errors.Select(
+                    error => error.Description));
+
+            throw new InvalidOperationException(
+                $"Failed to create the role '{roleName}': {errors}");
         }
-
-        var result =
-            await _roleManager.CreateAsync(
-                new ApplicationRole
-                {
-                    Name = SystemRoles.Customer
-                });
-
-        if ( result.Succeeded )
-        {
-            return;
-        }
-
-        var errors = string.Join(
-            "; " ,
-            result.Errors.Select(x => x.Description));
-
-        throw new InvalidOperationException(
-            $"Failed to create the Customer role: {errors}");
     }
 }

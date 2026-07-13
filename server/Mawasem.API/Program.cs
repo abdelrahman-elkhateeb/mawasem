@@ -126,6 +126,14 @@ if ( jwtSettings.RefreshTokenDays <= 0 )
 builder.Services.Configure<JwtSettings>(jwtSection);
 
 // ============================================================
+// First SuperAdmin seed configuration
+// ============================================================
+
+builder.Services.Configure<SuperAdminSeedOptions>(
+    builder.Configuration.GetSection(
+        SuperAdminSeedOptions.SectionName));
+
+// ============================================================
 // Authentication
 // ============================================================
 
@@ -178,8 +186,17 @@ builder.Services.AddScoped<
     ICustomerAuthenticationService ,
     CustomerAuthenticationService>();
 
+builder.Services.AddScoped<
+    IDashboardAuthenticationService ,
+    DashboardAuthenticationService>();
+
+// ============================================================
+// Identity seeders
+// ============================================================
 
 builder.Services.AddScoped<IdentityRoleSeeder>();
+builder.Services.AddScoped<IdentityPermissionSeeder>();
+builder.Services.AddScoped<FirstSuperAdminSeeder>();
 
 // ============================================================
 // Controllers
@@ -238,6 +255,18 @@ await using ( var scope = app.Services.CreateAsyncScope() )
             .GetRequiredService<IdentityRoleSeeder>();
 
     await roleSeeder.SeedAsync();
+
+    var permissionSeeder =
+        scope.ServiceProvider
+            .GetRequiredService<IdentityPermissionSeeder>();
+
+    await permissionSeeder.SeedAsync();
+
+    var firstSuperAdminSeeder =
+        scope.ServiceProvider
+            .GetRequiredService<FirstSuperAdminSeeder>();
+
+    await firstSuperAdminSeeder.SeedAsync();
 }
 
 if ( app.Environment.IsDevelopment() )

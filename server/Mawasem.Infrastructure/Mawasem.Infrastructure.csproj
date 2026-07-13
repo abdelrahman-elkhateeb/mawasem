@@ -12,10 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Authentication\" />
     <Folder Include="Payments\Paymob\" />
     <Folder Include="Persistence\Migrations\" />
-    <Folder Include="Persistence\Seed\" />
     <Folder Include="Services\" />
     <Folder Include="Storage\Images\" />
   </ItemGroup>

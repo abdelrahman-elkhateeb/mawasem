@@ -14,15 +14,17 @@ public class ApplicationUser : IdentityUser<int>
 
     public DateOnly? BirthDate { get; set; }
 
-    public Gender Gender { get; set; }
+    public Gender? Gender { get; set; }
 
-    public ReferralSource ReferralSource { get; set; }
+    public ReferralSource? ReferralSource { get; set; }
 
     public bool IsBlocked { get; set; }
 
     public DateTime? BlockedAt { get; set; }
 
     public string? BlockedReason { get; set; }
+
+    public bool MustChangePassword { get; set; }
 
     public ICollection<UserAddress> Addresses { get; set; } =
         new List<UserAddress>();

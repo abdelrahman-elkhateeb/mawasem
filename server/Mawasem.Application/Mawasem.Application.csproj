@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <Folder Include="Common\Responses\" />
-    <Folder Include="Features\Authentication\" />
     <Folder Include="Features\Categories\" />
     <Folder Include="Features\Cart\" />
     <Folder Include="Features\Delivery\" />

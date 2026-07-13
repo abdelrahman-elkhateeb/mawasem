@@ -21,12 +21,10 @@ public sealed class ApplicationUserConfiguration
         builder.Property(x => x.BirthDate);
 
         builder.Property(x => x.Gender)
-            .HasConversion<int>()
-            .IsRequired();
+            .HasConversion<int>();
 
         builder.Property(x => x.ReferralSource)
-            .HasConversion<int>()
-            .IsRequired();
+            .HasConversion<int>();
 
         builder.Property(x => x.IsBlocked)
             .IsRequired()
@@ -37,9 +35,14 @@ public sealed class ApplicationUserConfiguration
         builder.Property(x => x.BlockedReason)
             .HasMaxLength(500);
 
+        builder.Property(x => x.MustChangePassword)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         // Phone numbers will be normalized before they are saved.
         // The unique filtered index prevents reuse while still allowing
         // admin accounts that do not have a phone number.
+
         builder.HasIndex(x => x.PhoneNumber)
             .IsUnique()
             .HasFilter("[PhoneNumber] IS NOT NULL");
