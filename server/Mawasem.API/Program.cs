@@ -13,82 +13,98 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ============================================================
-// Database
-// ============================================================
+builder.Services.AddControllers();
+
+builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc(
+        "v1" ,
+        new OpenApiInfo
+        {
+            Title = "Mawasem API" ,
+            Version = "v1"
+        });
+
+    options.AddSecurityDefinition(
+        "Bearer" ,
+        new OpenApiSecurityScheme
+        {
+            Name = "Authorization" ,
+            Type = SecuritySchemeType.Http ,
+            Scheme = "bearer" ,
+            BearerFormat = "JWT" ,
+            In = ParameterLocation.Header ,
+
+            Description =
+                "Enter the JWT access token only. " +
+                "Do not include the word Bearer."
+        });
+
+    options.AddSecurityRequirement(
+        new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference =
+                        new OpenApiReference
+                        {
+                            Type =
+                                ReferenceType.SecurityScheme,
+
+                            Id = "Bearer"
+                        }
+                },
+                Array.Empty<string>()
+            }
+        });
+});
 
 var connectionString =
-    builder.Configuration.GetConnectionString("DefaultConnection")
+    builder.Configuration.GetConnectionString(
+        "DefaultConnection")
     ?? throw new InvalidOperationException(
-        "Connection string 'DefaultConnection' was not found.");
+        "The DefaultConnection connection string is missing.");
 
-builder.Services.AddDbContext<MawasemDbContext>(options =>
-    options.UseSqlServer(connectionString));
-
-// ============================================================
-// ASP.NET Core Identity
-// ============================================================
-
-builder.Services
-    .AddIdentityCore<ApplicationUser>(options =>
-    {
-        options.Password.RequiredLength = 8;
-        options.Password.RequiredUniqueChars = 1;
-        options.Password.RequireDigit = true;
-        options.Password.RequireLowercase = true;
-        options.Password.RequireUppercase = true;
-        options.Password.RequireNonAlphanumeric = true;
-
-        options.Lockout.AllowedForNewUsers = true;
-        options.Lockout.MaxFailedAccessAttempts = 5;
-        options.Lockout.DefaultLockoutTimeSpan =
-            TimeSpan.FromMinutes(15);
-
-        options.SignIn.RequireConfirmedAccount = false;
-        options.SignIn.RequireConfirmedEmail = false;
-        options.SignIn.RequireConfirmedPhoneNumber = false;
-
-        options.User.RequireUniqueEmail = false;
-    })
-    .AddRoles<ApplicationRole>()
-    .AddSignInManager()
-    .AddEntityFrameworkStores<MawasemDbContext>()
-    .AddDefaultTokenProviders();
-
-builder.Services.Configure<DataProtectionTokenProviderOptions>(
+builder.Services.AddDbContext<MawasemDbContext>(
     options =>
     {
-        options.TokenLifespan = TimeSpan.FromMinutes(15);
+        options.UseSqlServer(connectionString);
     });
 
-// ============================================================
-// JWT configuration
-// ============================================================
+builder.Services.Configure<JwtSettings>(
+    builder.Configuration.GetSection(
+        JwtSettings.SectionName));
 
-var jwtSection =
-    builder.Configuration.GetSection(JwtSettings.SectionName);
+builder.Services.Configure<SuperAdminSeedOptions>(
+    builder.Configuration.GetSection(
+        SuperAdminSeedOptions.SectionName));
 
 var jwtSettings =
-    jwtSection.Get<JwtSettings>()
+    builder.Configuration
+        .GetSection(JwtSettings.SectionName)
+        .Get<JwtSettings>()
     ?? throw new InvalidOperationException(
-        "JWT configuration was not found.");
+        "The JWT configuration section is missing.");
 
 if ( string.IsNullOrWhiteSpace(jwtSettings.Issuer) )
 {
     throw new InvalidOperationException(
-        "JWT issuer was not configured.");
+        "Jwt:Issuer is required.");
 }
 
 if ( string.IsNullOrWhiteSpace(jwtSettings.Audience) )
 {
     throw new InvalidOperationException(
-        "JWT audience was not configured.");
+        "Jwt:Audience is required.");
 }
 
 if ( string.IsNullOrWhiteSpace(jwtSettings.Key) )
 {
     throw new InvalidOperationException(
-        "JWT signing key was not configured.");
+        "Jwt:Key is required. Store it using .NET User Secrets.");
 }
 
 byte[] jwtKeyBytes;
@@ -101,82 +117,97 @@ try
 catch ( FormatException exception )
 {
     throw new InvalidOperationException(
-        "JWT signing key must be a valid Base64 value." ,
+        "Jwt:Key must be a valid Base64 value." ,
         exception);
 }
 
 if ( jwtKeyBytes.Length < 32 )
 {
     throw new InvalidOperationException(
-        "JWT signing key must contain at least 32 bytes.");
+        "Jwt:Key must contain at least 32 bytes.");
 }
 
 if ( jwtSettings.AccessTokenMinutes <= 0 )
 {
     throw new InvalidOperationException(
-        "JWT access-token lifetime must be greater than zero.");
+        "Jwt:AccessTokenMinutes must be greater than zero.");
 }
 
 if ( jwtSettings.RefreshTokenDays <= 0 )
 {
     throw new InvalidOperationException(
-        "JWT refresh-token lifetime must be greater than zero.");
+        "Jwt:RefreshTokenDays must be greater than zero.");
 }
 
-builder.Services.Configure<JwtSettings>(jwtSection);
+builder.Services
+    .AddIdentityCore<ApplicationUser>(
+        options =>
+        {
+            options.Password.RequiredLength = 8;
+            options.Password.RequiredUniqueChars = 1;
+            options.Password.RequireDigit = true;
+            options.Password.RequireLowercase = true;
+            options.Password.RequireUppercase = true;
+            options.Password.RequireNonAlphanumeric = true;
 
-// ============================================================
-// First SuperAdmin seed configuration
-// ============================================================
+            // Customer accounts do not currently require an email.
+            // Dashboard email uniqueness is handled by the
+            // dashboard authentication service.
+            options.User.RequireUniqueEmail = false;
 
-builder.Services.Configure<SuperAdminSeedOptions>(
-    builder.Configuration.GetSection(
-        SuperAdminSeedOptions.SectionName));
+            options.Lockout.AllowedForNewUsers = true;
 
-// ============================================================
-// Authentication
-// ============================================================
+            options.Lockout.MaxFailedAccessAttempts = 5;
+
+            options.Lockout.DefaultLockoutTimeSpan =
+                TimeSpan.FromMinutes(15);
+        })
+    .AddRoles<ApplicationRole>()
+    .AddEntityFrameworkStores<MawasemDbContext>()
+    .AddSignInManager()
+    .AddDefaultTokenProviders();
 
 builder.Services
-    .AddAuthentication(options =>
-    {
-        options.DefaultAuthenticateScheme =
-            JwtBearerDefaults.AuthenticationScheme;
+    .AddAuthentication(
+        JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(
+        options =>
+        {
+            options.MapInboundClaims = false;
 
-        options.DefaultChallengeScheme =
-            JwtBearerDefaults.AuthenticationScheme;
-    })
-    .AddJwtBearer(options =>
-    {
-        options.SaveToken = false;
-        options.RequireHttpsMetadata = true;
+            options.TokenValidationParameters =
+                new TokenValidationParameters
+                {
+                    ValidateIssuer = true ,
+                    ValidIssuer = jwtSettings.Issuer ,
 
-        options.TokenValidationParameters =
-            new TokenValidationParameters
-            {
-                ValidateIssuer = true ,
-                ValidIssuer = jwtSettings.Issuer ,
+                    ValidateAudience = true ,
+                    ValidAudience = jwtSettings.Audience ,
 
-                ValidateAudience = true ,
-                ValidAudience = jwtSettings.Audience ,
+                    ValidateIssuerSigningKey = true ,
 
-                ValidateLifetime = true ,
+                    IssuerSigningKey =
+                        new SymmetricSecurityKey(
+                            jwtKeyBytes) ,
 
-                ValidateIssuerSigningKey = true ,
-                IssuerSigningKey =
-                    new SymmetricSecurityKey(jwtKeyBytes) ,
+                    ValidateLifetime = true ,
+                    RequireExpirationTime = true ,
 
-                ClockSkew = TimeSpan.FromSeconds(30) ,
+                    ClockSkew =
+                        TimeSpan.FromSeconds(30) ,
 
-                NameClaimType = ClaimTypes.NameIdentifier ,
-                RoleClaimType = ClaimTypes.Role
-            };
-    });
+                    NameClaimType =
+                        ClaimTypes.Name ,
+
+                    RoleClaimType =
+                        ClaimTypes.Role
+                };
+        });
 
 builder.Services.AddAuthorization();
 
-// JWT and refresh-token generation
-builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton(
+    TimeProvider.System);
 
 builder.Services.AddScoped<
     ITokenService ,
@@ -190,65 +221,23 @@ builder.Services.AddScoped<
     IDashboardAuthenticationService ,
     DashboardAuthenticationService>();
 
-// ============================================================
-// Identity seeders
-// ============================================================
+builder.Services.AddScoped<
+    IDashboardUserProfileService ,
+    DashboardUserProfileService>();
 
-builder.Services.AddScoped<IdentityRoleSeeder>();
-builder.Services.AddScoped<IdentityPermissionSeeder>();
-builder.Services.AddScoped<FirstSuperAdminSeeder>();
+builder.Services.AddScoped<
+    IdentityRoleSeeder>();
 
-// ============================================================
-// Controllers
-// ============================================================
+builder.Services.AddScoped<
+    IdentityPermissionSeeder>();
 
-builder.Services.AddControllers();
-
-// ============================================================
-// Swagger
-// ============================================================
-
-builder.Services.AddEndpointsApiExplorer();
-
-builder.Services.AddSwaggerGen(options =>
-{
-    options.AddSecurityDefinition(
-        "Bearer" ,
-        new OpenApiSecurityScheme
-        {
-            Name = "Authorization" ,
-            Description =
-                "Enter the JWT access token without writing the word Bearer." ,
-            In = ParameterLocation.Header ,
-            Type = SecuritySchemeType.Http ,
-            Scheme = "bearer" ,
-            BearerFormat = "JWT"
-        });
-
-    options.AddSecurityRequirement(
-        new OpenApiSecurityRequirement
-        {
-            {
-                new OpenApiSecurityScheme
-                {
-                    Reference = new OpenApiReference
-                    {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "Bearer"
-                    }
-                },
-                Array.Empty<string>()
-            }
-        });
-});
-
-// ============================================================
-// Application pipeline
-// ============================================================
+builder.Services.AddScoped<
+    FirstSuperAdminSeeder>();
 
 var app = builder.Build();
 
-await using ( var scope = app.Services.CreateAsyncScope() )
+await using ( var scope =
+    app.Services.CreateAsyncScope() )
 {
     var roleSeeder =
         scope.ServiceProvider
@@ -272,12 +261,16 @@ await using ( var scope = app.Services.CreateAsyncScope() )
 if ( app.Environment.IsDevelopment() )
 {
     app.UseSwagger();
+
     app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
+app.UseStaticFiles();
+
 app.UseAuthentication();
+
 app.UseAuthorization();
 
 app.MapControllers();

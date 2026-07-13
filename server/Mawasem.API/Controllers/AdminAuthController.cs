@@ -19,15 +19,20 @@ public sealed class AdminAuthController : ControllerBase
     private readonly IDashboardAuthenticationService
         _authenticationService;
 
+    private readonly IDashboardUserProfileService
+        _userProfileService;
+
     private readonly JwtSettings _jwtSettings;
     private readonly TimeProvider _timeProvider;
 
     public AdminAuthController(
         IDashboardAuthenticationService authenticationService ,
+        IDashboardUserProfileService userProfileService ,
         IOptions<JwtSettings> jwtOptions ,
         TimeProvider timeProvider )
     {
         _authenticationService = authenticationService;
+        _userProfileService = userProfileService;
         _jwtSettings = jwtOptions.Value;
         _timeProvider = timeProvider;
     }
@@ -46,13 +51,13 @@ public sealed class AdminAuthController : ControllerBase
 
         if ( !result.Succeeded )
         {
-            return CreateFailureResponse(result);
+            return CreateSessionFailureResponse(result);
         }
 
         if ( result.Response is null ||
             string.IsNullOrWhiteSpace(result.RefreshToken) )
         {
-            return CreateUnexpectedFailureResponse();
+            return CreateUnexpectedSessionFailureResponse();
         }
 
         WriteRefreshTokenCookie(result.RefreshToken);
@@ -79,7 +84,7 @@ public sealed class AdminAuthController : ControllerBase
         {
             DeleteRefreshTokenCookie();
 
-            return CreateFailureResponse(result);
+            return CreateSessionFailureResponse(result);
         }
 
         if ( result.Response is null ||
@@ -87,7 +92,7 @@ public sealed class AdminAuthController : ControllerBase
         {
             DeleteRefreshTokenCookie();
 
-            return CreateUnexpectedFailureResponse();
+            return CreateUnexpectedSessionFailureResponse();
         }
 
         WriteRefreshTokenCookie(result.RefreshToken);
@@ -115,25 +120,76 @@ public sealed class AdminAuthController : ControllerBase
     }
 
     [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentUser(
+        CancellationToken cancellationToken )
+    {
+        var userIdValue =
+            User.FindFirst(
+                ClaimTypes.NameIdentifier)?
+                .Value;
+
+        if ( !int.TryParse(userIdValue , out var userId) )
+        {
+            return CreateProfileFailureResponse(
+                DashboardUserProfileResult.Failure(
+                    AuthenticationErrorCodes.InvalidCredentials ,
+                    "The authenticated dashboard account is invalid."));
+        }
+
+        var result =
+            await _userProfileService.GetAsync(
+                userId ,
+                cancellationToken);
+
+        if ( !result.Succeeded )
+        {
+            return CreateProfileFailureResponse(result);
+        }
+
+        if ( result.User is null )
+        {
+            var problemDetails =
+                new ProblemDetails
+                {
+                    Status =
+                        StatusCodes.Status500InternalServerError ,
+
+                    Title =
+                        "Dashboard profile retrieval failed." ,
+
+                    Detail =
+                        "The dashboard profile could not be returned."
+                };
+
+            problemDetails.Extensions["code"] =
+                "authentication.dashboard_profile_failed";
+
+            return StatusCode(
+                StatusCodes.Status500InternalServerError ,
+                problemDetails);
+        }
+
+        return Ok(result.User);
+    }
+
+    [Authorize]
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword(
         [FromBody] ChangeDashboardPasswordRequest request ,
         CancellationToken cancellationToken )
     {
         var userIdValue =
-            User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
+            User.FindFirst(
+                ClaimTypes.NameIdentifier)?
+                .Value;
 
-        if ( !int.TryParse(userIdValue , out var userId) ||
-            userId <= 0 )
+        if ( !int.TryParse(userIdValue , out var userId) )
         {
-            var invalidUserResult =
+            return CreateOperationFailureResponse(
                 DashboardAuthenticationOperationResult.Failure(
                     AuthenticationErrorCodes.InvalidCredentials ,
-                    "The authenticated dashboard account is invalid.");
-
-            return CreateOperationFailureResponse(
-                invalidUserResult);
+                    "The authenticated dashboard account is invalid."));
         }
 
         var result =
@@ -148,8 +204,6 @@ public sealed class AdminAuthController : ControllerBase
             return CreateOperationFailureResponse(result);
         }
 
-        // Password changes revoke all active refresh tokens.
-        // Remove the browser's now-invalid dashboard cookie as well.
         DeleteRefreshTokenCookie();
 
         return NoContent();
@@ -170,8 +224,8 @@ public sealed class AdminAuthController : ControllerBase
             {
                 HttpOnly = true ,
 
-                // Supports local HTTP development.
-                // Production must use HTTPS.
+                // Allows local HTTP development.
+                // Production must run through HTTPS.
                 Secure = Request.IsHttps ,
 
                 SameSite = SameSiteMode.Lax ,
@@ -203,7 +257,7 @@ public sealed class AdminAuthController : ControllerBase
             .ToString();
     }
 
-    private IActionResult CreateFailureResponse(
+    private IActionResult CreateSessionFailureResponse(
         DashboardAuthenticationSessionResult result )
     {
         var statusCode =
@@ -232,6 +286,7 @@ public sealed class AdminAuthController : ControllerBase
             new ProblemDetails
             {
                 Status = statusCode ,
+
                 Title =
                     "Dashboard authentication request failed." ,
 
@@ -255,24 +310,28 @@ public sealed class AdminAuthController : ControllerBase
         var statusCode =
             result.ErrorCode switch
             {
-                AuthenticationErrorCodes.InvalidCredentials =>
-                    StatusCodes.Status401Unauthorized,
-
-                AuthenticationErrorCodes.AccountBlocked =>
-                    StatusCodes.Status403Forbidden,
-
-                AuthenticationErrorCodes.CurrentPasswordIncorrect =>
+                AuthenticationErrorCodes.InvalidRequest =>
                     StatusCodes.Status400BadRequest,
 
                 AuthenticationErrorCodes
                     .PasswordConfirmationMismatch =>
                     StatusCodes.Status400BadRequest,
 
+                AuthenticationErrorCodes
+                    .CurrentPasswordIncorrect =>
+                    StatusCodes.Status400BadRequest,
+
                 AuthenticationErrorCodes.PasswordChangeFailed =>
                     StatusCodes.Status400BadRequest,
 
-                AuthenticationErrorCodes.InvalidRequest =>
-                    StatusCodes.Status400BadRequest,
+                AuthenticationErrorCodes.InvalidCredentials =>
+                    StatusCodes.Status401Unauthorized,
+
+                AuthenticationErrorCodes.AccountBlocked =>
+                    StatusCodes.Status403Forbidden,
+
+                AuthenticationErrorCodes.AccountLocked =>
+                    423,
 
                 _ =>
                     StatusCodes.Status400BadRequest
@@ -282,12 +341,13 @@ public sealed class AdminAuthController : ControllerBase
             new ProblemDetails
             {
                 Status = statusCode ,
+
                 Title =
-                    "Dashboard password change failed." ,
+                    "Dashboard account operation failed." ,
 
                 Detail =
                     result.ErrorMessage
-                    ?? "The password could not be changed."
+                    ?? "The dashboard account operation could not be completed."
             };
 
         problemDetails.Extensions["code"] =
@@ -299,7 +359,42 @@ public sealed class AdminAuthController : ControllerBase
             problemDetails);
     }
 
-    private IActionResult CreateUnexpectedFailureResponse()
+    private IActionResult CreateProfileFailureResponse(
+        DashboardUserProfileResult result )
+    {
+        var statusCode =
+            result.ErrorCode switch
+            {
+                AuthenticationErrorCodes.AccountBlocked =>
+                    StatusCodes.Status403Forbidden,
+
+                _ =>
+                    StatusCodes.Status401Unauthorized
+            };
+
+        var problemDetails =
+            new ProblemDetails
+            {
+                Status = statusCode ,
+
+                Title =
+                    "Dashboard profile request failed." ,
+
+                Detail =
+                    result.ErrorMessage
+                    ?? "The dashboard profile could not be retrieved."
+            };
+
+        problemDetails.Extensions["code"] =
+            result.ErrorCode
+            ?? AuthenticationErrorCodes.InvalidCredentials;
+
+        return StatusCode(
+            statusCode ,
+            problemDetails);
+    }
+
+    private IActionResult CreateUnexpectedSessionFailureResponse()
     {
         var problemDetails =
             new ProblemDetails
@@ -311,11 +406,11 @@ public sealed class AdminAuthController : ControllerBase
                     "Dashboard authentication session creation failed." ,
 
                 Detail =
-                    "The login succeeded, but the dashboard authentication session could not be created."
+                    "The account operation succeeded, but the dashboard authentication session could not be created."
             };
 
         problemDetails.Extensions["code"] =
-            "authentication.session_creation_failed";
+            "authentication.dashboard_session_creation_failed";
 
         return StatusCode(
             StatusCodes.Status500InternalServerError ,
