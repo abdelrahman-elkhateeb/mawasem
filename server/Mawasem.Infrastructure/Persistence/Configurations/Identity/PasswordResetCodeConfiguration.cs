@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Mawasem.Infrastructure.Persistence.Configurations.Identity;
 
-public class PasswordResetCodeConfiguration
+public sealed class PasswordResetCodeConfiguration
     : IEntityTypeConfiguration<PasswordResetCode>
 {
     public void Configure(
@@ -20,6 +20,9 @@ public class PasswordResetCodeConfiguration
 
         builder.Property(x => x.CodeHash)
             .IsRequired()
+            .HasMaxLength(128);
+
+        builder.Property(x => x.ResetTokenHash)
             .HasMaxLength(128);
 
         builder.Property(x => x.CreatedAtUtc)
@@ -43,6 +46,10 @@ public class PasswordResetCodeConfiguration
 
         builder.HasIndex(x => x.ExpiresAtUtc);
 
+        builder.HasIndex(x => x.ResetTokenHash)
+            .IsUnique()
+            .HasFilter("[ResetTokenHash] IS NOT NULL");
+
         builder.HasOne(x => x.User)
             .WithMany(x => x.PasswordResetCodes)
             .HasForeignKey(x => x.UserId)
@@ -50,5 +57,6 @@ public class PasswordResetCodeConfiguration
 
         builder.Ignore(x => x.IsExpired);
         builder.Ignore(x => x.IsActive);
+        builder.Ignore(x => x.IsResetTokenActive);
     }
 }

@@ -4,6 +4,7 @@ using Mawasem.Infrastructure.Persistence.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Mawasem.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(MawasemDbContext))]
-    partial class MawasemDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260713212750_AddCustomerPasswordResetToken")]
+    partial class AddCustomerPasswordResetToken
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

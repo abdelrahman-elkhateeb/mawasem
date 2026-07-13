@@ -18,15 +18,21 @@ public sealed class AuthController : ControllerBase
     private readonly ICustomerAuthenticationService
         _authenticationService;
 
+    private readonly ICustomerPasswordResetService
+        _passwordResetService;
+
     private readonly JwtSettings _jwtSettings;
+
     private readonly TimeProvider _timeProvider;
 
     public AuthController(
         ICustomerAuthenticationService authenticationService ,
+        ICustomerPasswordResetService passwordResetService ,
         IOptions<JwtSettings> jwtOptions ,
         TimeProvider timeProvider )
     {
         _authenticationService = authenticationService;
+        _passwordResetService = passwordResetService;
         _jwtSettings = jwtOptions.Value;
         _timeProvider = timeProvider;
     }
@@ -45,13 +51,13 @@ public sealed class AuthController : ControllerBase
 
         if ( !result.Succeeded )
         {
-            return CreateFailureResponse(result);
+            return CreateAuthenticationFailureResponse(result);
         }
 
         if ( result.Response is null ||
             string.IsNullOrWhiteSpace(result.RefreshToken) )
         {
-            return CreateUnexpectedFailureResponse();
+            return CreateUnexpectedSessionFailureResponse();
         }
 
         WriteRefreshTokenCookie(result.RefreshToken);
@@ -75,13 +81,13 @@ public sealed class AuthController : ControllerBase
 
         if ( !result.Succeeded )
         {
-            return CreateFailureResponse(result);
+            return CreateAuthenticationFailureResponse(result);
         }
 
         if ( result.Response is null ||
             string.IsNullOrWhiteSpace(result.RefreshToken) )
         {
-            return CreateUnexpectedFailureResponse();
+            return CreateUnexpectedSessionFailureResponse();
         }
 
         WriteRefreshTokenCookie(result.RefreshToken);
@@ -108,7 +114,7 @@ public sealed class AuthController : ControllerBase
         {
             DeleteRefreshTokenCookie();
 
-            return CreateFailureResponse(result);
+            return CreateAuthenticationFailureResponse(result);
         }
 
         if ( result.Response is null ||
@@ -116,10 +122,9 @@ public sealed class AuthController : ControllerBase
         {
             DeleteRefreshTokenCookie();
 
-            return CreateUnexpectedFailureResponse();
+            return CreateUnexpectedSessionFailureResponse();
         }
 
-        // Replace the old cookie with the rotated refresh token.
         WriteRefreshTokenCookie(result.RefreshToken);
 
         return Ok(result.Response);
@@ -139,6 +144,77 @@ public sealed class AuthController : ControllerBase
             GetClientIpAddress() ,
             cancellationToken);
 
+        DeleteRefreshTokenCookie();
+
+        return NoContent();
+    }
+
+    [AllowAnonymous]
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotCustomerPasswordRequest request ,
+        CancellationToken cancellationToken )
+    {
+        var result =
+            await _passwordResetService.RequestCodeAsync(
+                request ,
+                GetClientIpAddress() ,
+                cancellationToken);
+
+        if ( !result.Succeeded )
+        {
+            return CreatePasswordResetFailureResponse(result);
+        }
+
+        // The same response is returned whether the account exists
+        // or not, preventing phone-number account discovery.
+        return Accepted();
+    }
+
+    [AllowAnonymous]
+    [HttpPost("verify-reset-code")]
+    public async Task<IActionResult> VerifyResetCode(
+        [FromBody] VerifyCustomerPasswordResetCodeRequest request ,
+        CancellationToken cancellationToken )
+    {
+        var result =
+            await _passwordResetService.VerifyCodeAsync(
+                request ,
+                cancellationToken);
+
+        if ( !result.Succeeded )
+        {
+            return CreatePasswordResetVerificationFailureResponse(
+                result);
+        }
+
+        if ( result.Response is null )
+        {
+            return CreateUnexpectedPasswordResetFailureResponse();
+        }
+
+        return Ok(result.Response);
+    }
+
+    [AllowAnonymous]
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetCustomerPasswordRequest request ,
+        CancellationToken cancellationToken )
+    {
+        var result =
+            await _passwordResetService.ResetPasswordAsync(
+                request ,
+                GetClientIpAddress() ,
+                cancellationToken);
+
+        if ( !result.Succeeded )
+        {
+            return CreatePasswordResetFailureResponse(result);
+        }
+
+        // Existing refresh tokens are revoked in the database.
+        // Delete the local browser cookie as well.
         DeleteRefreshTokenCookie();
 
         return NoContent();
@@ -192,7 +268,7 @@ public sealed class AuthController : ControllerBase
             .ToString();
     }
 
-    private IActionResult CreateFailureResponse(
+    private IActionResult CreateAuthenticationFailureResponse(
         AuthenticationSessionResult result )
     {
         var statusCode =
@@ -220,7 +296,7 @@ public sealed class AuthController : ControllerBase
                     StatusCodes.Status403Forbidden,
 
                 AuthenticationErrorCodes.AccountLocked =>
-                    423,
+                    StatusCodes.Status423Locked,
 
                 _ =>
                     StatusCodes.Status400BadRequest
@@ -231,6 +307,7 @@ public sealed class AuthController : ControllerBase
             {
                 Status = statusCode ,
                 Title = "Authentication request failed." ,
+
                 Detail =
                     result.ErrorMessage
                     ?? "The authentication request could not be completed."
@@ -245,7 +322,98 @@ public sealed class AuthController : ControllerBase
             problemDetails);
     }
 
-    private IActionResult CreateUnexpectedFailureResponse()
+    private IActionResult CreatePasswordResetFailureResponse(
+        CustomerPasswordResetOperationResult result )
+    {
+        var statusCode =
+            result.ErrorCode switch
+            {
+                AuthenticationErrorCodes.InvalidRequest =>
+                    StatusCodes.Status400BadRequest,
+
+                AuthenticationErrorCodes.InvalidPhoneNumber =>
+                    StatusCodes.Status400BadRequest,
+
+                AuthenticationErrorCodes
+                    .PasswordConfirmationMismatch =>
+                    StatusCodes.Status400BadRequest,
+
+                AuthenticationErrorCodes
+                    .PasswordResetTokenInvalid =>
+                    StatusCodes.Status400BadRequest,
+
+                AuthenticationErrorCodes
+                    .PasswordResetFailed =>
+                    StatusCodes.Status400BadRequest,
+
+                AuthenticationErrorCodes
+                    .PasswordResetDeliveryFailed =>
+                    StatusCodes.Status503ServiceUnavailable,
+
+                _ =>
+                    StatusCodes.Status400BadRequest
+            };
+
+        var problemDetails =
+            new ProblemDetails
+            {
+                Status = statusCode ,
+                Title = "Password reset request failed." ,
+
+                Detail =
+                    result.ErrorMessage
+                    ?? "The password reset request could not be completed."
+            };
+
+        problemDetails.Extensions["code"] =
+            result.ErrorCode
+            ?? AuthenticationErrorCodes.InvalidRequest;
+
+        return StatusCode(
+            statusCode ,
+            problemDetails);
+    }
+
+    private IActionResult
+        CreatePasswordResetVerificationFailureResponse(
+            CustomerPasswordResetVerificationResult result )
+    {
+        var statusCode =
+            result.ErrorCode switch
+            {
+                AuthenticationErrorCodes
+                    .PasswordResetCodeInvalid =>
+                    StatusCodes.Status400BadRequest,
+
+                _ =>
+                    StatusCodes.Status400BadRequest
+            };
+
+        var problemDetails =
+            new ProblemDetails
+            {
+                Status = statusCode ,
+
+                Title =
+                    "Password reset code verification failed." ,
+
+                Detail =
+                    result.ErrorMessage
+                    ?? "The verification code could not be accepted."
+            };
+
+        problemDetails.Extensions["code"] =
+            result.ErrorCode
+            ?? AuthenticationErrorCodes
+                .PasswordResetCodeInvalid;
+
+        return StatusCode(
+            statusCode ,
+            problemDetails);
+    }
+
+    private IActionResult
+        CreateUnexpectedSessionFailureResponse()
     {
         var problemDetails =
             new ProblemDetails
@@ -257,11 +425,37 @@ public sealed class AuthController : ControllerBase
                     "Authentication session creation failed." ,
 
                 Detail =
-                    "The account operation succeeded, but the authentication session could not be created."
+                    "The account operation succeeded, but the " +
+                    "authentication session could not be created."
             };
 
         problemDetails.Extensions["code"] =
             "authentication.session_creation_failed";
+
+        return StatusCode(
+            StatusCodes.Status500InternalServerError ,
+            problemDetails);
+    }
+
+    private IActionResult
+        CreateUnexpectedPasswordResetFailureResponse()
+    {
+        var problemDetails =
+            new ProblemDetails
+            {
+                Status =
+                    StatusCodes.Status500InternalServerError ,
+
+                Title =
+                    "Password reset verification failed." ,
+
+                Detail =
+                    "The verification operation succeeded, but " +
+                    "the password reset token could not be returned."
+            };
+
+        problemDetails.Extensions["code"] =
+            "authentication.password_reset_token_creation_failed";
 
         return StatusCode(
             StatusCodes.Status500InternalServerError ,

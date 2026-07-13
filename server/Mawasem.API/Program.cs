@@ -82,6 +82,10 @@ builder.Services.Configure<SuperAdminSeedOptions>(
     builder.Configuration.GetSection(
         SuperAdminSeedOptions.SectionName));
 
+builder.Services.Configure<CustomerPasswordResetOptions>(
+    builder.Configuration.GetSection(
+        CustomerPasswordResetOptions.SectionName));
+
 var jwtSettings =
     builder.Configuration
         .GetSection(JwtSettings.SectionName)
@@ -216,6 +220,17 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     ICustomerAuthenticationService ,
     CustomerAuthenticationService>();
+
+builder.Services.AddScoped<
+    ICustomerPasswordResetService ,
+    CustomerPasswordResetService>();
+
+if ( builder.Environment.IsDevelopment() )
+{
+    builder.Services.AddScoped<
+        ICustomerPasswordResetCodeSender ,
+        DevelopmentCustomerPasswordResetCodeSender>();
+}
 
 builder.Services.AddScoped<
     IDashboardAuthenticationService ,

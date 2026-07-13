@@ -34,4 +34,16 @@ public static class AuthenticationErrorCodes
 
     public const string PasswordChangeFailed =
         "authentication.password_change_failed";
+
+    public const string PasswordResetCodeInvalid =
+        "authentication.password_reset_code_invalid";
+
+    public const string PasswordResetTokenInvalid =
+        "authentication.password_reset_token_invalid";
+
+    public const string PasswordResetFailed =
+        "authentication.password_reset_failed";
+
+    public const string PasswordResetDeliveryFailed =
+        "authentication.password_reset_delivery_failed";
 }
