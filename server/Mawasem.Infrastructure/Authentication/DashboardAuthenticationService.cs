@@ -58,8 +58,7 @@ public sealed class DashboardAuthenticationService
                 .Take(2)
                 .ToListAsync(cancellationToken);
 
-        // More than one matching account is treated as invalid rather
-        // than selecting an account ambiguously.
+        // Never select a dashboard account ambiguously.
         if ( matchingUsers.Count != 1 )
         {
             return InvalidCredentials();
@@ -69,7 +68,7 @@ public sealed class DashboardAuthenticationService
 
         if ( user.IsBlocked )
         {
-            return AuthenticationSessionResultFailure(
+            return OperationFailure(
                 AuthenticationErrorCodes.AccountBlocked ,
                 "This dashboard account has been blocked.");
         }
@@ -105,7 +104,7 @@ public sealed class DashboardAuthenticationService
 
                 if ( !accessFailedResult.Succeeded )
                 {
-                    return AuthenticationSessionResultFailure(
+                    return OperationFailure(
                         AuthenticationErrorCodes.InvalidCredentials ,
                         "The login attempt could not be completed.");
                 }
@@ -127,7 +126,7 @@ public sealed class DashboardAuthenticationService
 
             if ( !resetFailureCountResult.Succeeded )
             {
-                return AuthenticationSessionResultFailure(
+                return OperationFailure(
                     AuthenticationErrorCodes.InvalidCredentials ,
                     "The login attempt could not be completed.");
             }
@@ -205,7 +204,7 @@ public sealed class DashboardAuthenticationService
             await _dbContext.SaveChangesAsync(
                 cancellationToken);
 
-            return AuthenticationSessionResultFailure(
+            return OperationFailure(
                 AuthenticationErrorCodes.AccountBlocked ,
                 "This dashboard account has been blocked.");
         }
@@ -302,6 +301,146 @@ public sealed class DashboardAuthenticationService
 
         await _dbContext.SaveChangesAsync(
             cancellationToken);
+    }
+
+    public async Task<DashboardAuthenticationOperationResult>
+        ChangePasswordAsync(
+            int userId ,
+            ChangeDashboardPasswordRequest request ,
+            string? ipAddress ,
+            CancellationToken cancellationToken = default )
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if ( userId <= 0 )
+        {
+            return DashboardAuthenticationOperationResult.Failure(
+                AuthenticationErrorCodes.InvalidRequest ,
+                "The authenticated dashboard account is invalid.");
+        }
+
+        if ( string.IsNullOrWhiteSpace(request.CurrentPassword) )
+        {
+            return DashboardAuthenticationOperationResult.Failure(
+                AuthenticationErrorCodes.InvalidRequest ,
+                "The current password is required.");
+        }
+
+        if ( string.IsNullOrWhiteSpace(request.NewPassword) )
+        {
+            return DashboardAuthenticationOperationResult.Failure(
+                AuthenticationErrorCodes.InvalidRequest ,
+                "The new password is required.");
+        }
+
+        if ( string.IsNullOrWhiteSpace(
+                request.ConfirmNewPassword) )
+        {
+            return DashboardAuthenticationOperationResult.Failure(
+                AuthenticationErrorCodes.InvalidRequest ,
+                "The new password confirmation is required.");
+        }
+
+        if ( !string.Equals(
+                request.NewPassword ,
+                request.ConfirmNewPassword ,
+                StringComparison.Ordinal) )
+        {
+            return DashboardAuthenticationOperationResult.Failure(
+                AuthenticationErrorCodes
+                    .PasswordConfirmationMismatch ,
+                "The new password and confirmation do not match.");
+        }
+
+        var user =
+            await _dbContext.Users
+                .SingleOrDefaultAsync(
+                    dashboardUser =>
+                        dashboardUser.Id == userId ,
+                    cancellationToken);
+
+        if ( user is null )
+        {
+            return DashboardAuthenticationOperationResult.Failure(
+                AuthenticationErrorCodes.InvalidCredentials ,
+                "The authenticated dashboard account was not found.");
+        }
+
+        if ( user.IsBlocked )
+        {
+            return DashboardAuthenticationOperationResult.Failure(
+                AuthenticationErrorCodes.AccountBlocked ,
+                "This dashboard account has been blocked.");
+        }
+
+        var roles =
+            await _userManager.GetRolesAsync(user);
+
+        var hasDashboardRole =
+            roles.Any(SystemRoles.IsDashboardRole);
+
+        if ( !hasDashboardRole )
+        {
+            return DashboardAuthenticationOperationResult.Failure(
+                AuthenticationErrorCodes.InvalidCredentials ,
+                "The authenticated account cannot access the dashboard.");
+        }
+
+        await using var transaction =
+            await _dbContext.Database.BeginTransactionAsync(
+                cancellationToken);
+
+        var changePasswordResult =
+            await _userManager.ChangePasswordAsync(
+                user ,
+                request.CurrentPassword ,
+                request.NewPassword);
+
+        if ( !changePasswordResult.Succeeded )
+        {
+            var currentPasswordIsIncorrect =
+                changePasswordResult.Errors.Any(
+                    error =>
+                        string.Equals(
+                            error.Code ,
+                            "PasswordMismatch" ,
+                            StringComparison.Ordinal));
+
+            if ( currentPasswordIsIncorrect )
+            {
+                return DashboardAuthenticationOperationResult.Failure(
+                    AuthenticationErrorCodes
+                        .CurrentPasswordIncorrect ,
+                    "The current password is incorrect.");
+            }
+
+            return DashboardAuthenticationOperationResult.Failure(
+                AuthenticationErrorCodes.PasswordChangeFailed ,
+                JoinIdentityErrors(
+                    changePasswordResult.Errors));
+        }
+
+        user.MustChangePassword = false;
+
+        var now =
+            _timeProvider.GetUtcNow().UtcDateTime;
+
+        await RevokeAllActiveTokensAsync(
+            user.Id ,
+            now ,
+            ipAddress ,
+            "Password changed." ,
+            cancellationToken);
+
+        await _dbContext.SaveChangesAsync(
+            cancellationToken);
+
+        await transaction.CommitAsync(
+            cancellationToken);
+
+        return DashboardAuthenticationOperationResult.Success();
     }
 
     private async Task<DashboardAuthenticationSessionResult>
@@ -437,7 +576,7 @@ public sealed class DashboardAuthenticationService
     private static DashboardAuthenticationSessionResult
         InvalidCredentials()
     {
-        return AuthenticationSessionResultFailure(
+        return OperationFailure(
             AuthenticationErrorCodes.InvalidCredentials ,
             "The email or password is incorrect.");
     }
@@ -445,7 +584,7 @@ public sealed class DashboardAuthenticationService
     private static DashboardAuthenticationSessionResult
         InvalidRefreshToken()
     {
-        return AuthenticationSessionResultFailure(
+        return OperationFailure(
             AuthenticationErrorCodes.InvalidRefreshToken ,
             "The dashboard refresh token is invalid or has expired.");
     }
@@ -453,19 +592,28 @@ public sealed class DashboardAuthenticationService
     private static DashboardAuthenticationSessionResult
         AccountLocked()
     {
-        return AuthenticationSessionResultFailure(
+        return OperationFailure(
             AuthenticationErrorCodes.AccountLocked ,
             "The account is temporarily locked because of repeated failed login attempts.");
     }
 
     private static DashboardAuthenticationSessionResult
-        AuthenticationSessionResultFailure(
+        OperationFailure(
             string errorCode ,
             string errorMessage )
     {
         return DashboardAuthenticationSessionResult.Failure(
             errorCode ,
             errorMessage);
+    }
+
+    private static string JoinIdentityErrors(
+        IEnumerable<IdentityError> errors )
+    {
+        return string.Join(
+            "; " ,
+            errors.Select(
+                error => error.Description));
     }
 
     private static string? NormalizeIpAddress(

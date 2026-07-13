@@ -19,4 +19,10 @@ public interface IDashboardAuthenticationService
         string? refreshToken ,
         string? ipAddress ,
         CancellationToken cancellationToken = default );
+
+    Task<DashboardAuthenticationOperationResult> ChangePasswordAsync(
+        int userId ,
+        ChangeDashboardPasswordRequest request ,
+        string? ipAddress ,
+        CancellationToken cancellationToken = default );
 }

@@ -5,6 +5,7 @@ using Mawasem.Application.Features.Authentication.Options;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using System.Security.Claims;
 
 namespace Mawasem.API.Controllers;
 
@@ -113,6 +114,47 @@ public sealed class AdminAuthController : ControllerBase
         return NoContent();
     }
 
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword(
+        [FromBody] ChangeDashboardPasswordRequest request ,
+        CancellationToken cancellationToken )
+    {
+        var userIdValue =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if ( !int.TryParse(userIdValue , out var userId) ||
+            userId <= 0 )
+        {
+            var invalidUserResult =
+                DashboardAuthenticationOperationResult.Failure(
+                    AuthenticationErrorCodes.InvalidCredentials ,
+                    "The authenticated dashboard account is invalid.");
+
+            return CreateOperationFailureResponse(
+                invalidUserResult);
+        }
+
+        var result =
+            await _authenticationService.ChangePasswordAsync(
+                userId ,
+                request ,
+                GetClientIpAddress() ,
+                cancellationToken);
+
+        if ( !result.Succeeded )
+        {
+            return CreateOperationFailureResponse(result);
+        }
+
+        // Password changes revoke all active refresh tokens.
+        // Remove the browser's now-invalid dashboard cookie as well.
+        DeleteRefreshTokenCookie();
+
+        return NoContent();
+    }
+
     private void WriteRefreshTokenCookie(
         string refreshToken )
     {
@@ -196,6 +238,56 @@ public sealed class AdminAuthController : ControllerBase
                 Detail =
                     result.ErrorMessage
                     ?? "The dashboard authentication request could not be completed."
+            };
+
+        problemDetails.Extensions["code"] =
+            result.ErrorCode
+            ?? AuthenticationErrorCodes.InvalidRequest;
+
+        return StatusCode(
+            statusCode ,
+            problemDetails);
+    }
+
+    private IActionResult CreateOperationFailureResponse(
+        DashboardAuthenticationOperationResult result )
+    {
+        var statusCode =
+            result.ErrorCode switch
+            {
+                AuthenticationErrorCodes.InvalidCredentials =>
+                    StatusCodes.Status401Unauthorized,
+
+                AuthenticationErrorCodes.AccountBlocked =>
+                    StatusCodes.Status403Forbidden,
+
+                AuthenticationErrorCodes.CurrentPasswordIncorrect =>
+                    StatusCodes.Status400BadRequest,
+
+                AuthenticationErrorCodes
+                    .PasswordConfirmationMismatch =>
+                    StatusCodes.Status400BadRequest,
+
+                AuthenticationErrorCodes.PasswordChangeFailed =>
+                    StatusCodes.Status400BadRequest,
+
+                AuthenticationErrorCodes.InvalidRequest =>
+                    StatusCodes.Status400BadRequest,
+
+                _ =>
+                    StatusCodes.Status400BadRequest
+            };
+
+        var problemDetails =
+            new ProblemDetails
+            {
+                Status = statusCode ,
+                Title =
+                    "Dashboard password change failed." ,
+
+                Detail =
+                    result.ErrorMessage
+                    ?? "The password could not be changed."
             };
 
         problemDetails.Extensions["code"] =

@@ -25,4 +25,13 @@ public static class AuthenticationErrorCodes
 
     public const string RegistrationFailed =
         "authentication.registration_failed";
+
+    public const string CurrentPasswordIncorrect =
+        "authentication.current_password_incorrect";
+
+    public const string PasswordConfirmationMismatch =
+        "authentication.password_confirmation_mismatch";
+
+    public const string PasswordChangeFailed =
+        "authentication.password_change_failed";
 }
