@@ -14,9 +14,9 @@ public class ApplicationUser : IdentityUser<int>
 
     public DateOnly? BirthDate { get; set; }
 
-    public Gender Gender { get; set; }
+    public Gender? Gender { get; set; }
 
-    public ReferralSource ReferralSource { get; set; }
+    public ReferralSource? ReferralSource { get; set; }
 
     public bool IsBlocked { get; set; }
 
@@ -24,9 +24,20 @@ public class ApplicationUser : IdentityUser<int>
 
     public string? BlockedReason { get; set; }
 
-    public ICollection<UserAddress> Addresses { get; set; } = new List<UserAddress>();
+    public bool MustChangePassword { get; set; }
 
-    public ICollection<Order> Orders { get; set; } = new List<Order>();
+    public ICollection<UserAddress> Addresses { get; set; } =
+        new List<UserAddress>();
 
-    public ICollection<Review> Reviews { get; set; } = new List<Review>();
+    public ICollection<Order> Orders { get; set; } =
+        new List<Order>();
+
+    public ICollection<Review> Reviews { get; set; } =
+        new List<Review>();
+
+    public ICollection<RefreshToken> RefreshTokens { get; set; } =
+        new List<RefreshToken>();
+
+    public ICollection<PasswordResetCode> PasswordResetCodes { get; set; } =
+        new List<PasswordResetCode>();
 }
