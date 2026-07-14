@@ -1,3 +1,4 @@
+using Mawasem.API.Authorization;
 using Mawasem.Application.Features.Authentication.Interfaces;
 using Mawasem.Application.Features.Authentication.Options;
 using Mawasem.Domain.Identity;
@@ -5,6 +6,7 @@ using Mawasem.Infrastructure.Authentication;
 using Mawasem.Infrastructure.Persistence.Contexts;
 using Mawasem.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -208,7 +210,27 @@ builder.Services
                 };
         });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(
+    options =>
+    {
+        foreach ( var permission in SystemPermissions.All )
+        {
+            options.AddPolicy(
+                permission ,
+                policy =>
+                {
+                    policy.RequireAuthenticatedUser();
+
+                    policy.AddRequirements(
+                        new PermissionAuthorizationRequirement(
+                            permission));
+                });
+        }
+    });
+
+builder.Services.AddScoped<
+    IAuthorizationHandler ,
+    PermissionAuthorizationHandler>();
 
 builder.Services.AddSingleton(
     TimeProvider.System);

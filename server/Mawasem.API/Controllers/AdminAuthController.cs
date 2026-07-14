@@ -1,7 +1,9 @@
-﻿using Mawasem.Application.Features.Authentication.Contracts.Requests;
+﻿using Mawasem.API.Authorization;
+using Mawasem.Application.Features.Authentication.Contracts.Requests;
 using Mawasem.Application.Features.Authentication.Interfaces;
 using Mawasem.Application.Features.Authentication.Models;
 using Mawasem.Application.Features.Authentication.Options;
+using Mawasem.Domain.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -119,7 +121,8 @@ public sealed class AdminAuthController : ControllerBase
         return NoContent();
     }
 
-    [Authorize]
+    [RequirePermission(
+        SystemPermissions.Dashboard.Access)]
     [HttpGet("me")]
     public async Task<IActionResult> GetCurrentUser(
         CancellationToken cancellationToken )
