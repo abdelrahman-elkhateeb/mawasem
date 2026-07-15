@@ -1,10 +1,12 @@
 using Mawasem.API.Authorization;
 using Mawasem.Application.Features.Authentication.Interfaces;
 using Mawasem.Application.Features.Authentication.Options;
+using Mawasem.Application.Features.Customers.Interfaces;
 using Mawasem.Application.Features.Employees.Interfaces;
 using Mawasem.Application.Features.Roles.Interfaces;
 using Mawasem.Domain.Identity;
 using Mawasem.Infrastructure.Authentication;
+using Mawasem.Infrastructure.Customers;
 using Mawasem.Infrastructure.Employees;
 using Mawasem.Infrastructure.Persistence.Contexts;
 using Mawasem.Infrastructure.Persistence.Seed;
@@ -265,6 +267,10 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IDashboardUserProfileService ,
     DashboardUserProfileService>();
+
+builder.Services.AddScoped<
+    ICustomerManagementService ,
+    CustomerManagementService>();
 
 builder.Services.AddScoped<
     IEmployeeManagementService ,
