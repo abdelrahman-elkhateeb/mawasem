@@ -77,6 +77,63 @@ public sealed class AdminCustomersController : ControllerBase
         return Ok(result.Response);
     }
 
+    [RequirePermission(
+        SystemPermissions.Customers.Block)]
+    [HttpPost("{customerId:int}/block")]
+    public async Task<IActionResult> Block(
+        int customerId ,
+        [FromBody] BlockCustomerRequest request ,
+        CancellationToken cancellationToken )
+    {
+        var result =
+            await _customerManagementService
+                .BlockAsync(
+                    customerId ,
+                    request ,
+                    GetClientIpAddress() ,
+                    cancellationToken);
+
+        if ( !result.Succeeded )
+        {
+            return CreateFailureResponse(
+                result.ErrorCode ,
+                result.ErrorMessage);
+        }
+
+        return NoContent();
+    }
+
+    [RequirePermission(
+        SystemPermissions.Customers.Unblock)]
+    [HttpPost("{customerId:int}/unblock")]
+    public async Task<IActionResult> Unblock(
+        int customerId ,
+        CancellationToken cancellationToken )
+    {
+        var result =
+            await _customerManagementService
+                .UnblockAsync(
+                    customerId ,
+                    cancellationToken);
+
+        if ( !result.Succeeded )
+        {
+            return CreateFailureResponse(
+                result.ErrorCode ,
+                result.ErrorMessage);
+        }
+
+        return NoContent();
+    }
+
+    private string? GetClientIpAddress()
+    {
+        return HttpContext
+            .Connection
+            .RemoteIpAddress?
+            .ToString();
+    }
+
     private IActionResult CreateFailureResponse(
         string? errorCode ,
         string? errorMessage )

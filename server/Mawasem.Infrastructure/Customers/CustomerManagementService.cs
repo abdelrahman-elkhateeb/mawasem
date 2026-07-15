@@ -16,6 +16,8 @@ public sealed class CustomerManagementService
 
     private const int MaximumSearchLength = 256;
 
+    private const int MaximumBlockReasonLength = 500;
+
     private readonly MawasemDbContext _dbContext;
 
     public CustomerManagementService(
@@ -264,6 +266,120 @@ public sealed class CustomerManagementService
             .Success(response);
     }
 
+    public async Task<CustomerManagementOperationResult>
+        BlockAsync(
+            int customerId ,
+            BlockCustomerRequest request ,
+            string? ipAddress ,
+            CancellationToken cancellationToken = default )
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if ( customerId <= 0 )
+        {
+            return CustomerManagementOperationResult.Failure(
+                CustomerManagementErrorCodes.NotFound ,
+                "The customer was not found.");
+        }
+
+        var blockReason =
+            request.Reason?.Trim();
+
+        if ( string.IsNullOrWhiteSpace(blockReason) )
+        {
+            return CustomerManagementOperationResult.Failure(
+                CustomerManagementErrorCodes.InvalidRequest ,
+                "A block reason is required.");
+        }
+
+        if ( blockReason.Length >
+            MaximumBlockReasonLength )
+        {
+            return CustomerManagementOperationResult.Failure(
+                CustomerManagementErrorCodes.InvalidRequest ,
+                $"The block reason cannot exceed {MaximumBlockReasonLength} characters.");
+        }
+
+        var customer =
+            await GetTrackedCustomerAsync(
+                customerId ,
+                cancellationToken);
+
+        if ( customer is null )
+        {
+            return CustomerManagementOperationResult.Failure(
+                CustomerManagementErrorCodes.NotFound ,
+                "The customer was not found.");
+        }
+
+        var now =
+            TimeProvider.System
+                .GetUtcNow()
+                .UtcDateTime;
+
+        customer.IsBlocked = true;
+        customer.BlockedAt = now;
+        customer.BlockedReason = blockReason;
+
+        var activeTokens =
+            await _dbContext.RefreshTokens
+                .Where(refreshToken =>
+                    refreshToken.UserId ==
+                    customer.Id &&
+                    refreshToken.RevokedAtUtc == null &&
+                    refreshToken.ExpiresAtUtc > now)
+                .ToListAsync(cancellationToken);
+
+        foreach ( var refreshToken in activeTokens )
+        {
+            refreshToken.RevokedAtUtc = now;
+            refreshToken.RevokedByIp = ipAddress;
+            refreshToken.RevocationReason =
+                "Customer account blocked by an administrator.";
+        }
+
+        await _dbContext.SaveChangesAsync(
+            cancellationToken);
+
+        return CustomerManagementOperationResult.Success();
+    }
+
+    public async Task<CustomerManagementOperationResult>
+        UnblockAsync(
+            int customerId ,
+            CancellationToken cancellationToken = default )
+    {
+        if ( customerId <= 0 )
+        {
+            return CustomerManagementOperationResult.Failure(
+                CustomerManagementErrorCodes.NotFound ,
+                "The customer was not found.");
+        }
+
+        var customer =
+            await GetTrackedCustomerAsync(
+                customerId ,
+                cancellationToken);
+
+        if ( customer is null )
+        {
+            return CustomerManagementOperationResult.Failure(
+                CustomerManagementErrorCodes.NotFound ,
+                "The customer was not found.");
+        }
+
+        customer.IsBlocked = false;
+        customer.BlockedAt = null;
+        customer.BlockedReason = null;
+        customer.LockoutEnd = null;
+        customer.AccessFailedCount = 0;
+
+        await _dbContext.SaveChangesAsync(
+            cancellationToken);
+
+        return CustomerManagementOperationResult.Success();
+    }
+
     private IQueryable<ApplicationUser> GetCustomerUsersQuery()
     {
         var customerUserIds =
@@ -280,5 +396,28 @@ public sealed class CustomerManagementService
             .AsNoTracking()
             .Where(user =>
                 customerUserIds.Contains(user.Id));
+    }
+
+    private async Task<ApplicationUser?> GetTrackedCustomerAsync(
+        int customerId ,
+        CancellationToken cancellationToken )
+    {
+        var customerUserIds =
+            from userRole
+                in _dbContext.UserRoles
+            join role
+                in _dbContext.Roles
+                on userRole.RoleId equals role.Id
+            where
+                role.Name == SystemRoles.Customer
+            select userRole.UserId;
+
+        return await _dbContext.Users
+            .AsTracking()
+            .SingleOrDefaultAsync(
+                user =>
+                    user.Id == customerId &&
+                    customerUserIds.Contains(user.Id) ,
+                cancellationToken);
     }
 }

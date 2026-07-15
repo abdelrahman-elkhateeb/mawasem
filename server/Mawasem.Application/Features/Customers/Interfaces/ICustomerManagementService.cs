@@ -13,4 +13,14 @@ public interface ICustomerManagementService
     Task<CustomerManagementResult<CustomerDetailsResponse>> GetByIdAsync(
         int customerId ,
         CancellationToken cancellationToken = default );
+
+    Task<CustomerManagementOperationResult> BlockAsync(
+        int customerId ,
+        BlockCustomerRequest request ,
+        string? ipAddress ,
+        CancellationToken cancellationToken = default );
+
+    Task<CustomerManagementOperationResult> UnblockAsync(
+        int customerId ,
+        CancellationToken cancellationToken = default );
 }
