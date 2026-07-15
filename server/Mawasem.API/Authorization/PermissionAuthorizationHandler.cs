@@ -1,4 +1,5 @@
-﻿using Mawasem.Infrastructure.Persistence.Contexts;
+﻿using Mawasem.Domain.Identity;
+using Mawasem.Infrastructure.Persistence.Contexts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
@@ -39,24 +40,35 @@ public sealed class PermissionAuthorizationHandler
             return;
         }
 
+        var dashboardRoleNames =
+            SystemRoles.DashboardRoles.ToArray();
+
         var rolePermissionIds =
             from user in _dbContext.Users
             join userRole in _dbContext.UserRoles
                 on user.Id equals userRole.UserId
+            join role in _dbContext.Roles
+                on userRole.RoleId equals role.Id
             join rolePermission in _dbContext.RolePermissions
-                on userRole.RoleId equals rolePermission.RoleId
+                on role.Id equals rolePermission.RoleId
             join permission in _dbContext.Permissions
                 on rolePermission.PermissionId equals permission.Id
             where
                 user.Id == userId
                 && !user.IsBlocked
                 && !user.MustChangePassword
+                && role.Name != null
+                && dashboardRoleNames.Contains(role.Name)
                 && !permission.IsDeleted
                 && permission.Name == requirement.Permission
             select permission.Id;
 
         var userPermissionIds =
             from user in _dbContext.Users
+            join userRole in _dbContext.UserRoles
+                on user.Id equals userRole.UserId
+            join role in _dbContext.Roles
+                on userRole.RoleId equals role.Id
             join userPermission in _dbContext.UserPermissions
                 on user.Id equals userPermission.UserId
             join permission in _dbContext.Permissions
@@ -65,6 +77,8 @@ public sealed class PermissionAuthorizationHandler
                 user.Id == userId
                 && !user.IsBlocked
                 && !user.MustChangePassword
+                && role.Name != null
+                && dashboardRoleNames.Contains(role.Name)
                 && !permission.IsDeleted
                 && permission.Name == requirement.Permission
             select permission.Id;
