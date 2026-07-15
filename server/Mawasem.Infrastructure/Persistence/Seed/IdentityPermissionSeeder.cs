@@ -31,7 +31,10 @@ public sealed class IdentityPermissionSeeder
         await AssignSuperAdminPermissionsAsync(
             cancellationToken);
 
-        // Save SuperAdmin assignments before checking dashboard access.
+        await RemoveCustomerPermissionsAsync(
+            cancellationToken);
+
+        // Save protected-role assignments before checking dashboard access.
         // This prevents Dashboard.Access from being added twice.
         await _dbContext.SaveChangesAsync(
             cancellationToken);
@@ -152,6 +155,36 @@ public sealed class IdentityPermissionSeeder
                     PermissionId = permissionId
                 });
         }
+    }
+
+    private async Task RemoveCustomerPermissionsAsync(
+        CancellationToken cancellationToken )
+    {
+        var customerRole =
+            await _roleManager.FindByNameAsync(
+                SystemRoles.Customer);
+
+        if ( customerRole is null )
+        {
+            throw new InvalidOperationException(
+                "The Customer role was not found. " +
+                "Run the role seeder before the permission seeder.");
+        }
+
+        var customerRolePermissions =
+            await _dbContext.RolePermissions
+                .Where(rolePermission =>
+                    rolePermission.RoleId ==
+                    customerRole.Id)
+                .ToListAsync(cancellationToken);
+
+        if ( customerRolePermissions.Count == 0 )
+        {
+            return;
+        }
+
+        _dbContext.RolePermissions.RemoveRange(
+            customerRolePermissions);
     }
 
     private async Task AssignDashboardAccessAsync(

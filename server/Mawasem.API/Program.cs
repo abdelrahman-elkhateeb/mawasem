@@ -2,11 +2,13 @@ using Mawasem.API.Authorization;
 using Mawasem.Application.Features.Authentication.Interfaces;
 using Mawasem.Application.Features.Authentication.Options;
 using Mawasem.Application.Features.Employees.Interfaces;
+using Mawasem.Application.Features.Roles.Interfaces;
 using Mawasem.Domain.Identity;
 using Mawasem.Infrastructure.Authentication;
 using Mawasem.Infrastructure.Employees;
 using Mawasem.Infrastructure.Persistence.Contexts;
 using Mawasem.Infrastructure.Persistence.Seed;
+using Mawasem.Infrastructure.Roles;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -267,6 +269,10 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IEmployeeManagementService ,
     EmployeeManagementService>();
+
+builder.Services.AddScoped<
+    IRolePermissionManagementService ,
+    RolePermissionManagementService>();
 
 builder.Services.AddScoped<
     IdentityRoleSeeder>();
