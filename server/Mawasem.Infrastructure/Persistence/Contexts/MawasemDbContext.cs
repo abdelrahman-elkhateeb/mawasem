@@ -106,6 +106,9 @@ public class MawasemDbContext
     public DbSet<RolePermission> RolePermissions =>
         Set<RolePermission>();
 
+    public DbSet<UserPermission> UserPermissions =>
+        Set<UserPermission>();
+
     #endregion
 
     protected override void OnModelCreating(

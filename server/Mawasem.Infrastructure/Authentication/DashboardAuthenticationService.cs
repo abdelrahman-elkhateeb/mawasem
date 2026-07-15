@@ -507,22 +507,36 @@ public sealed class DashboardAuthenticationService
                 .Select(role => role.Id)
                 .ToListAsync(cancellationToken);
 
+        var rolePermissionNames =
+            from rolePermission
+                in _dbContext.RolePermissions
+            join permission
+                in _dbContext.Permissions
+                on rolePermission.PermissionId
+                equals permission.Id
+            where
+                roleIds.Contains(rolePermission.RoleId) &&
+                !permission.IsDeleted
+            select permission.Name;
+
+        var userPermissionNames =
+            from userPermission
+                in _dbContext.UserPermissions
+            join permission
+                in _dbContext.Permissions
+                on userPermission.PermissionId
+                equals permission.Id
+            where
+                userPermission.UserId == user.Id &&
+                !permission.IsDeleted
+            select permission.Name;
+
         var permissions =
-            await (
-                from rolePermission
-                    in _dbContext.RolePermissions
-                join permission
-                    in _dbContext.Permissions
-                    on rolePermission.PermissionId
-                    equals permission.Id
-                where
-                    roleIds.Contains(rolePermission.RoleId) &&
-                    !permission.IsDeleted
-                select permission.Name
-            )
-            .Distinct()
-            .OrderBy(permissionName => permissionName)
-            .ToArrayAsync(cancellationToken);
+            await rolePermissionNames
+                .Concat(userPermissionNames)
+                .Distinct()
+                .OrderBy(permissionName => permissionName)
+                .ToArrayAsync(cancellationToken);
 
         return new DashboardAuthenticationResponse
         {

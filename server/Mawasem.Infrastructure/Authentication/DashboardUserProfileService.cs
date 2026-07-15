@@ -80,22 +80,36 @@ public sealed class DashboardUserProfileService
                 .Select(role => role.Id)
                 .ToListAsync(cancellationToken);
 
+        var rolePermissionNames =
+            from rolePermission
+                in _dbContext.RolePermissions.AsNoTracking()
+            join permission
+                in _dbContext.Permissions.AsNoTracking()
+                on rolePermission.PermissionId
+                equals permission.Id
+            where
+                roleIds.Contains(rolePermission.RoleId) &&
+                !permission.IsDeleted
+            select permission.Name;
+
+        var userPermissionNames =
+            from userPermission
+                in _dbContext.UserPermissions.AsNoTracking()
+            join permission
+                in _dbContext.Permissions.AsNoTracking()
+                on userPermission.PermissionId
+                equals permission.Id
+            where
+                userPermission.UserId == user.Id &&
+                !permission.IsDeleted
+            select permission.Name;
+
         var permissions =
-            await (
-                from rolePermission
-                    in _dbContext.RolePermissions.AsNoTracking()
-                join permission
-                    in _dbContext.Permissions.AsNoTracking()
-                    on rolePermission.PermissionId
-                    equals permission.Id
-                where
-                    roleIds.Contains(rolePermission.RoleId) &&
-                    !permission.IsDeleted
-                select permission.Name
-            )
-            .Distinct()
-            .OrderBy(permissionName => permissionName)
-            .ToArrayAsync(cancellationToken);
+            await rolePermissionNames
+                .Concat(userPermissionNames)
+                .Distinct()
+                .OrderBy(permissionName => permissionName)
+                .ToArrayAsync(cancellationToken);
 
         var response =
             new DashboardAuthenticatedUserResponse

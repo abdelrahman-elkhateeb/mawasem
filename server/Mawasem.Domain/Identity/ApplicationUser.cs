@@ -40,4 +40,7 @@ public class ApplicationUser : IdentityUser<int>
 
     public ICollection<PasswordResetCode> PasswordResetCodes { get; set; } =
         new List<PasswordResetCode>();
+
+    public ICollection<UserPermission> UserPermissions { get; set; } =
+        new List<UserPermission>();
 }

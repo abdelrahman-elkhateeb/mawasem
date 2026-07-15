@@ -1,8 +1,10 @@
 using Mawasem.API.Authorization;
 using Mawasem.Application.Features.Authentication.Interfaces;
 using Mawasem.Application.Features.Authentication.Options;
+using Mawasem.Application.Features.Employees.Interfaces;
 using Mawasem.Domain.Identity;
 using Mawasem.Infrastructure.Authentication;
+using Mawasem.Infrastructure.Employees;
 using Mawasem.Infrastructure.Persistence.Contexts;
 using Mawasem.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -261,6 +263,10 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IDashboardUserProfileService ,
     DashboardUserProfileService>();
+
+builder.Services.AddScoped<
+    IEmployeeManagementService ,
+    EmployeeManagementService>();
 
 builder.Services.AddScoped<
     IdentityRoleSeeder>();
