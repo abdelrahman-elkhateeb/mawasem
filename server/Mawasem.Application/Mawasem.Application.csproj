@@ -15,7 +15,6 @@
     <Folder Include="Features\Cart\" />
     <Folder Include="Features\Delivery\" />
     <Folder Include="Features\Collections\" />
-    <Folder Include="Features\Brands\" />
     <Folder Include="Features\Reviews\" />
     <Folder Include="Features\Payments\" />
     <Folder Include="Features\Orders\" />
