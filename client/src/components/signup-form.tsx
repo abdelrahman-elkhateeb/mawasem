@@ -10,6 +10,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { GalleryVerticalEndIcon } from "lucide-react"
+import { Link } from "react-router-dom"
 
 export function SignupForm({
   className,
@@ -31,7 +32,7 @@ export function SignupForm({
             </a>
             <h1 className="text-xl font-bold">Welcome to Acme Inc.</h1>
             <FieldDescription>
-              Already have an account? <a href="/auth/login">Sign in</a>
+              Already have an account? <Link to="/auth/login">Sign in</Link>
             </FieldDescription>
           </div>
           <Field>
