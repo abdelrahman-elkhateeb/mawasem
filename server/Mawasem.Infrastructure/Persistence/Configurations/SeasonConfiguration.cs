@@ -4,9 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Mawasem.Infrastructure.Persistence.Configurations;
 
-public class SeasonConfiguration : IEntityTypeConfiguration<Season>
+public class SeasonConfiguration
+    : IEntityTypeConfiguration<Season>
 {
-    public void Configure( EntityTypeBuilder<Season> builder )
+    public void Configure(
+        EntityTypeBuilder<Season> builder )
     {
         builder.ToTable("Seasons");
 
@@ -35,5 +37,9 @@ public class SeasonConfiguration : IEntityTypeConfiguration<Season>
                 .HasColumnName("DescriptionAr")
                 .HasMaxLength(500);
         });
+
+        builder.Property(x => x.IsActive)
+            .IsRequired()
+            .HasDefaultValue(true);
     }
 }

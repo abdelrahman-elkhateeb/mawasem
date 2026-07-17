@@ -6,6 +6,7 @@ using Mawasem.Application.Features.Categories.Interfaces;
 using Mawasem.Application.Features.Customers.Interfaces;
 using Mawasem.Application.Features.Employees.Interfaces;
 using Mawasem.Application.Features.Roles.Interfaces;
+using Mawasem.Application.Features.Seasons.Interfaces;
 using Mawasem.Domain.Identity;
 using Mawasem.Infrastructure.Authentication;
 using Mawasem.Infrastructure.Brands;
@@ -15,6 +16,7 @@ using Mawasem.Infrastructure.Employees;
 using Mawasem.Infrastructure.Persistence.Contexts;
 using Mawasem.Infrastructure.Persistence.Seed;
 using Mawasem.Infrastructure.Roles;
+using Mawasem.Infrastructure.Seasons;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -291,6 +293,10 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IRolePermissionManagementService ,
     RolePermissionManagementService>();
+
+builder.Services.AddScoped<
+    ISeasonManagementService ,
+    SeasonManagementService>();
 
 builder.Services.AddScoped<
     IdentityRoleSeeder>();
