@@ -1,14 +1,19 @@
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Outlet } from "react-router-dom";
-import AdminSidebar from "@/components/admin/AdminSideBar";
+
 
 export default function AdminLayout() {
   return (
     <div className="flex min-h-screen bg-muted/40">
-      <AdminSidebar />
-
-      <main className="min-w-0 flex-1 p-6">
-        <Outlet />
-      </main>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarTrigger className="-ml-1" />
+        
+        <main className="min-w-0 flex-1 p-6">
+          <Outlet />
+        </main>
+      </SidebarProvider>
     </div>
   );
 }
