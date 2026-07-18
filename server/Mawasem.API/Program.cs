@@ -4,6 +4,7 @@ using Mawasem.Application.Features.Authentication.Models;
 using Mawasem.Application.Features.Authentication.Options;
 using Mawasem.Application.Features.Brands.Interfaces;
 using Mawasem.Application.Features.Categories.Interfaces;
+using Mawasem.Application.Features.Collections.Interfaces;
 using Mawasem.Application.Features.Customers.Interfaces;
 using Mawasem.Application.Features.Employees.Interfaces;
 using Mawasem.Application.Features.Roles.Interfaces;
@@ -12,6 +13,7 @@ using Mawasem.Domain.Identity;
 using Mawasem.Infrastructure.Authentication;
 using Mawasem.Infrastructure.Brands;
 using Mawasem.Infrastructure.Categories;
+using Mawasem.Infrastructure.Collections;
 using Mawasem.Infrastructure.Customers;
 using Mawasem.Infrastructure.Employees;
 using Mawasem.Infrastructure.Persistence.Contexts;
@@ -281,6 +283,10 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     ICategoryManagementService ,
     CategoryManagementService>();
+
+builder.Services.AddScoped<
+    ICollectionManagementService ,
+    CollectionManagementService>();
 
 builder.Services.AddScoped<
     ICustomerManagementService ,
