@@ -517,7 +517,8 @@ public sealed class CustomerAuthenticationService
                 "Select a valid gender.");
         }
 
-        if ( !Enum.IsDefined(request.ReferralSource) )
+        if ( request.ReferralSource.HasValue &&
+            !Enum.IsDefined(request.ReferralSource.Value) )
         {
             return InvalidRequest(
                 "Select a valid referral source.");

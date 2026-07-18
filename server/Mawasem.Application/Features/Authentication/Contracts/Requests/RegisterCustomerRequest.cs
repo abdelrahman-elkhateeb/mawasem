@@ -14,7 +14,7 @@ public sealed record RegisterCustomerRequest
 
     public Gender Gender { get; init; }
 
-    public ReferralSource ReferralSource { get; init; }
+    public ReferralSource? ReferralSource { get; init; }
 
     public string Password { get; init; } = string.Empty;
 
