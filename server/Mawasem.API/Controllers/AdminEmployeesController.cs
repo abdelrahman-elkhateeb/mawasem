@@ -1,11 +1,10 @@
 ﻿using Mawasem.API.Authorization;
+using Mawasem.API.Extensions;
 using Mawasem.Application.Features.Employees.Contracts.Requests;
 using Mawasem.Application.Features.Employees.Interfaces;
 using Mawasem.Application.Features.Employees.Models;
 using Mawasem.Domain.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Globalization;
-using System.Security.Claims;
 
 namespace Mawasem.API.Controllers;
 
@@ -365,14 +364,7 @@ public sealed class AdminEmployeesController : ControllerBase
     private bool TryGetActorUserId(
         out int actorUserId )
     {
-        var userIdValue =
-            User.FindFirst(
-                ClaimTypes.NameIdentifier)?.Value;
-
-        return int.TryParse(
-            userIdValue ,
-            NumberStyles.None ,
-            CultureInfo.InvariantCulture ,
+        return User.TryGetUserId(
             out actorUserId);
     }
 

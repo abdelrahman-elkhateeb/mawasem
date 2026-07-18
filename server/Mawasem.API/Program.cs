@@ -1,5 +1,6 @@
 using Mawasem.API.Authorization;
 using Mawasem.Application.Features.Authentication.Interfaces;
+using Mawasem.Application.Features.Authentication.Models;
 using Mawasem.Application.Features.Authentication.Options;
 using Mawasem.Application.Features.Brands.Interfaces;
 using Mawasem.Application.Features.Categories.Interfaces;
@@ -23,7 +24,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -215,10 +215,10 @@ builder.Services
                         TimeSpan.FromSeconds(30) ,
 
                     NameClaimType =
-                        ClaimTypes.Name ,
+                        JwtClaimNames.Name ,
 
                     RoleClaimType =
-                        ClaimTypes.Role
+                        JwtClaimNames.Role
                 };
         });
 

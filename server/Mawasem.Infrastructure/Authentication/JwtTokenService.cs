@@ -77,19 +77,15 @@ public sealed class JwtTokenService : ITokenService
         var claims = new List<Claim>
         {
             new(
-                JwtRegisteredClaimNames.Sub,
+                JwtClaimNames.Subject ,
                 userId),
 
             new(
-                JwtRegisteredClaimNames.Jti,
+                JwtClaimNames.TokenId ,
                 Guid.NewGuid().ToString("N")),
 
             new(
-                ClaimTypes.NameIdentifier,
-                userId),
-
-            new(
-                ClaimTypes.Name,
+                JwtClaimNames.Name ,
                 displayName)
         };
 
@@ -97,7 +93,7 @@ public sealed class JwtTokenService : ITokenService
         {
             claims.Add(
                 new Claim(
-                    ClaimTypes.Email ,
+                    JwtClaimNames.Email ,
                     user.Email));
         }
 
@@ -105,7 +101,7 @@ public sealed class JwtTokenService : ITokenService
         {
             claims.Add(
                 new Claim(
-                    ClaimTypes.MobilePhone ,
+                    JwtClaimNames.PhoneNumber ,
                     user.PhoneNumber));
         }
 
@@ -115,7 +111,7 @@ public sealed class JwtTokenService : ITokenService
         {
             claims.Add(
                 new Claim(
-                    ClaimTypes.Role ,
+                    JwtClaimNames.Role ,
                     role));
         }
 

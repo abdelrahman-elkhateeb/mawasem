@@ -1,11 +1,10 @@
 ﻿using Mawasem.API.Authorization;
+using Mawasem.API.Extensions;
 using Mawasem.Application.Features.Roles.Contracts.Requests;
 using Mawasem.Application.Features.Roles.Interfaces;
 using Mawasem.Application.Features.Roles.Models;
 using Mawasem.Domain.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Globalization;
-using System.Security.Claims;
 
 namespace Mawasem.API.Controllers;
 
@@ -135,14 +134,7 @@ public sealed class AdminRolesController : ControllerBase
     private bool TryGetActorUserId(
         out int actorUserId )
     {
-        var userIdValue =
-            User.FindFirst(
-                ClaimTypes.NameIdentifier)?.Value;
-
-        return int.TryParse(
-            userIdValue ,
-            NumberStyles.None ,
-            CultureInfo.InvariantCulture ,
+        return User.TryGetUserId(
             out actorUserId);
     }
 

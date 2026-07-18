@@ -1,4 +1,5 @@
 ﻿using Mawasem.API.Authorization;
+using Mawasem.Application.Features.Authentication.Models;
 using Mawasem.Domain.Identity;
 using Mawasem.Infrastructure.Persistence.Contexts;
 using Microsoft.AspNetCore.Authorization;
@@ -87,7 +88,7 @@ public sealed class DirectUserPermissionAuthorizationTests
                 new[]
                 {
                     new Claim(
-                        ClaimTypes.NameIdentifier ,
+                        JwtClaimNames.Subject ,
                         user.Id.ToString(
                             CultureInfo.InvariantCulture))
                 } ,
