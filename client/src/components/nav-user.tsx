@@ -31,7 +31,7 @@ interface User {
 
 const defaultUser: User = {
   name: "Abdelrahman Elkhateeb",
-  email: "abdelrahman@example.com",
+  email: "abdelrahman@gmail.com",
   avatar: "/images/default-avatar.png",
 };
 
