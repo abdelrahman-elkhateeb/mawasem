@@ -1,11 +1,10 @@
 ﻿using Mawasem.API.Authorization;
+using Mawasem.API.Extensions;
 using Mawasem.Application.Features.Brands.Contracts.Requests;
 using Mawasem.Application.Features.Brands.Interfaces;
 using Mawasem.Application.Features.Brands.Models;
 using Mawasem.Domain.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Globalization;
-using System.Security.Claims;
 
 namespace Mawasem.API.Controllers;
 
@@ -221,14 +220,7 @@ public sealed class AdminBrandsController : ControllerBase
     private bool TryGetActorUserId(
         out int actorUserId )
     {
-        var userIdValue =
-            User.FindFirst(
-                ClaimTypes.NameIdentifier)?.Value;
-
-        return int.TryParse(
-            userIdValue ,
-            NumberStyles.None ,
-            CultureInfo.InvariantCulture ,
+        return User.TryGetUserId(
             out actorUserId);
     }
 
@@ -252,8 +244,7 @@ public sealed class AdminBrandsController : ControllerBase
         var problemDetails =
             new ProblemDetails
             {
-                Status =
-                    statusCode ,
+                Status = statusCode ,
                 Title =
                     "Brand management request failed." ,
                 Detail =

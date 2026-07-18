@@ -1,9 +1,8 @@
 ﻿using Mawasem.Domain.Identity;
+using Mawasem.API.Extensions;
 using Mawasem.Infrastructure.Persistence.Contexts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using System.Globalization;
-using System.Security.Claims;
 
 namespace Mawasem.API.Authorization;
 
@@ -27,14 +26,7 @@ public sealed class PermissionAuthorizationHandler
             return;
         }
 
-        var userIdValue =
-            context.User.FindFirst(
-                ClaimTypes.NameIdentifier)?.Value;
-
-        if ( !int.TryParse(
-                userIdValue ,
-                NumberStyles.None ,
-                CultureInfo.InvariantCulture ,
+        if ( !context.User.TryGetUserId(
                 out var userId) )
         {
             return;

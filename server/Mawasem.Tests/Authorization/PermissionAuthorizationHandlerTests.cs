@@ -1,4 +1,5 @@
 ﻿using Mawasem.API.Authorization;
+using Mawasem.Application.Features.Authentication.Models;
 using Mawasem.Domain.Identity;
 using Mawasem.Infrastructure.Persistence.Contexts;
 using Microsoft.AspNetCore.Authorization;
@@ -331,7 +332,7 @@ public sealed class PermissionAuthorizationHandlerTests
             new[]
             {
                 new Claim(
-                    ClaimTypes.NameIdentifier ,
+                        JwtClaimNames.Subject ,
                     userId.ToString(
                         CultureInfo.InvariantCulture))
             };

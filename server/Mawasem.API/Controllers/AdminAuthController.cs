@@ -1,4 +1,5 @@
 ﻿using Mawasem.API.Authorization;
+using Mawasem.API.Extensions;
 using Mawasem.Application.Features.Authentication.Contracts.Requests;
 using Mawasem.Application.Features.Authentication.Interfaces;
 using Mawasem.Application.Features.Authentication.Models;
@@ -7,7 +8,6 @@ using Mawasem.Domain.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using System.Security.Claims;
 
 namespace Mawasem.API.Controllers;
 
@@ -127,12 +127,8 @@ public sealed class AdminAuthController : ControllerBase
     public async Task<IActionResult> GetCurrentUser(
         CancellationToken cancellationToken )
     {
-        var userIdValue =
-            User.FindFirst(
-                ClaimTypes.NameIdentifier)?
-                .Value;
-
-        if ( !int.TryParse(userIdValue , out var userId) )
+        if ( !User.TryGetUserId(
+                out var userId) )
         {
             return CreateProfileFailureResponse(
                 DashboardUserProfileResult.Failure(
@@ -182,12 +178,8 @@ public sealed class AdminAuthController : ControllerBase
         [FromBody] ChangeDashboardPasswordRequest request ,
         CancellationToken cancellationToken )
     {
-        var userIdValue =
-            User.FindFirst(
-                ClaimTypes.NameIdentifier)?
-                .Value;
-
-        if ( !int.TryParse(userIdValue , out var userId) )
+        if ( !User.TryGetUserId(
+                out var userId) )
         {
             return CreateOperationFailureResponse(
                 DashboardAuthenticationOperationResult.Failure(

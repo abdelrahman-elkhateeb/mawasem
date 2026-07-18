@@ -19,7 +19,6 @@
     <Folder Include="Features\Payments\" />
     <Folder Include="Features\Orders\" />
     <Folder Include="Features\Products\" />
-    <Folder Include="Features\Seasons\" />
   </ItemGroup>
 
 </Project>

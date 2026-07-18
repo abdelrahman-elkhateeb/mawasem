@@ -1,4 +1,5 @@
 ﻿using Mawasem.API.Authorization;
+using Mawasem.Application.Features.Authentication.Models;
 using Mawasem.Domain.Identity;
 using Mawasem.Infrastructure.Persistence.Contexts;
 using Microsoft.AspNetCore.Authorization;
@@ -88,7 +89,7 @@ public sealed class CustomerAuthorizationIsolationTests
                 new[]
                 {
                     new Claim(
-                        ClaimTypes.NameIdentifier ,
+                        JwtClaimNames.Subject ,
                         customer.Id.ToString(
                             CultureInfo.InvariantCulture))
                 } ,
