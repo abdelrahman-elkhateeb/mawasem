@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 
-import { adminRoutes } from "./admin.routes";
+import { dashboardRoutes } from "./dashboard.routes";
+import { authRoutes } from "./auth.routes";
 
-export const router = createBrowserRouter([adminRoutes]);
+export const router = createBrowserRouter([dashboardRoutes, authRoutes]);

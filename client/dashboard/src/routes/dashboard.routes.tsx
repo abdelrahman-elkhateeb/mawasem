@@ -1,8 +1,8 @@
 import type { RouteObject } from "react-router-dom";
-import DashboardPage from "@/pages/admin/DashboardPage"
+import DashboardPage from "@/pages/Home/DashboardPage"
 import AdminLayout from "@/layouts/AdminLayout";
 
-export const adminRoutes: RouteObject = {
+export const dashboardRoutes: RouteObject = {
   path: "/",
   element: <AdminLayout />,
   children: [
