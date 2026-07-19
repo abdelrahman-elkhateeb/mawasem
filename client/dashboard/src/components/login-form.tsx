@@ -4,21 +4,45 @@ import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useLogin } from "@/features/auth/hooks/use-login";
+import { loginSchema, type LoginFormData } from "@/features/auth/schema/login-schema";
 import { cn } from "@/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { BookOpen } from "lucide-react";
+import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const { isUserLoading, loginUser, error } = useLogin();
+
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  })
+
+  function onSubmit(data: LoginFormData) {
+    loginUser(data, {
+      onSuccess: () => {
+        console.log("success");
+
+      }
+    })
+  }
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <form>
+      <form onSubmit={handleSubmit(onSubmit)}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
             <a
@@ -49,7 +73,11 @@ export function LoginForm({
               type="email"
               placeholder="m@example.com"
               required
+              {...register("email")}
             />
+            {errors.email && (
+              <FieldError>{errors.email.message}</FieldError>
+            )}
           </Field>
 
           <Field>
@@ -60,12 +88,13 @@ export function LoginForm({
               type="password"
               placeholder="**********"
               required
+              {...register("password")}
             />
           </Field>
 
           <Field>
-            <Button type="submit" className="w-full">
-              Login
+            <Button type="submit" className="w-full" disabled={isUserLoading}>
+              {isUserLoading ? "loading..." : "Login"}
             </Button>
           </Field>
         </FieldGroup>
