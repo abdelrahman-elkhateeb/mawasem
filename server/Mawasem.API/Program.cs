@@ -1,3 +1,4 @@
+using Mawasem.API.Authentication;
 using Mawasem.API.Authorization;
 using Mawasem.Application.Features.Authentication.Interfaces;
 using Mawasem.Application.Features.Authentication.Models;
@@ -32,6 +33,24 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
+const string FrontendCorsPolicy =
+    "Frontend";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+        FrontendCorsPolicy ,
+        policy =>
+        {
+            policy
+                .WithOrigins(
+                    "http://localhost:5173")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        });
+});
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -70,11 +89,11 @@ builder.Services.AddSwaggerGen(options =>
                         new OpenApiReference
                         {
                             Type =
-                                ReferenceType.SecurityScheme,
+                                ReferenceType.SecurityScheme ,
 
                             Id = "Bearer"
                         }
-                },
+                } ,
                 Array.Empty<string>()
             }
         });
@@ -224,6 +243,23 @@ builder.Services
                     RoleClaimType =
                         JwtClaimNames.Role
                 };
+
+            options.Events =
+                new JwtBearerEvents
+                {
+                    OnMessageReceived =
+                        context =>
+                        {
+                            if ( context.Request.Cookies.TryGetValue(
+                                    AuthenticationCookieNames.AccessToken ,
+                                    out var accessToken) )
+                            {
+                                context.Token = accessToken;
+                            }
+
+                            return Task.CompletedTask;
+                        }
+                };
         });
 
 builder.Services.AddAuthorization(
@@ -258,6 +294,10 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     ICustomerAuthenticationService ,
     CustomerAuthenticationService>();
+
+builder.Services.AddScoped<
+    ICustomerUserProfileService ,
+    CustomerUserProfileService>();
 
 builder.Services.AddScoped<
     ICustomerPasswordResetService ,
@@ -353,6 +393,8 @@ if ( app.Environment.IsDevelopment() )
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
+
+app.UseCors(FrontendCorsPolicy);
 
 app.UseAuthentication();
 

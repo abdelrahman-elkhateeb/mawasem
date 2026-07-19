@@ -1,4 +1,7 @@
-﻿using Mawasem.Application.Features.Authentication.Contracts.Requests;
+﻿using Mawasem.API.Authentication;
+using Mawasem.API.Extensions;
+using Mawasem.Application.Features.Authentication.Contracts.Requests;
+using Mawasem.Application.Features.Authentication.Contracts.Responses;
 using Mawasem.Application.Features.Authentication.Interfaces;
 using Mawasem.Application.Features.Authentication.Models;
 using Mawasem.Application.Features.Authentication.Options;
@@ -12,11 +15,14 @@ namespace Mawasem.API.Controllers;
 [Route("api/auth")]
 public sealed class AuthController : ControllerBase
 {
-    private const string RefreshTokenCookieName =
-        "mawasem_customer_refresh_token";
+    private const string RefreshTokenCookiePath =
+        "/api/auth";
 
     private readonly ICustomerAuthenticationService
         _authenticationService;
+
+    private readonly ICustomerUserProfileService
+        _userProfileService;
 
     private readonly ICustomerPasswordResetService
         _passwordResetService;
@@ -27,11 +33,13 @@ public sealed class AuthController : ControllerBase
 
     public AuthController(
         ICustomerAuthenticationService authenticationService ,
+        ICustomerUserProfileService userProfileService ,
         ICustomerPasswordResetService passwordResetService ,
         IOptions<JwtSettings> jwtOptions ,
         TimeProvider timeProvider )
     {
         _authenticationService = authenticationService;
+        _userProfileService = userProfileService;
         _passwordResetService = passwordResetService;
         _jwtSettings = jwtOptions.Value;
         _timeProvider = timeProvider;
@@ -55,12 +63,14 @@ public sealed class AuthController : ControllerBase
         }
 
         if ( result.Response is null ||
-            string.IsNullOrWhiteSpace(result.RefreshToken) )
+            !TryWriteAuthenticationCookies(
+                result.Response ,
+                result.RefreshToken) )
         {
+            DeleteAuthenticationCookies();
+
             return CreateUnexpectedSessionFailureResponse();
         }
-
-        WriteRefreshTokenCookie(result.RefreshToken);
 
         return StatusCode(
             StatusCodes.Status201Created ,
@@ -85,12 +95,14 @@ public sealed class AuthController : ControllerBase
         }
 
         if ( result.Response is null ||
-            string.IsNullOrWhiteSpace(result.RefreshToken) )
+            !TryWriteAuthenticationCookies(
+                result.Response ,
+                result.RefreshToken) )
         {
+            DeleteAuthenticationCookies();
+
             return CreateUnexpectedSessionFailureResponse();
         }
-
-        WriteRefreshTokenCookie(result.RefreshToken);
 
         return Ok(result.Response);
     }
@@ -101,7 +113,7 @@ public sealed class AuthController : ControllerBase
         CancellationToken cancellationToken )
     {
         Request.Cookies.TryGetValue(
-            RefreshTokenCookieName ,
+            AuthenticationCookieNames.CustomerRefreshToken ,
             out var refreshToken);
 
         var result =
@@ -112,20 +124,20 @@ public sealed class AuthController : ControllerBase
 
         if ( !result.Succeeded )
         {
-            DeleteRefreshTokenCookie();
+            DeleteAuthenticationCookies();
 
             return CreateAuthenticationFailureResponse(result);
         }
 
         if ( result.Response is null ||
-            string.IsNullOrWhiteSpace(result.RefreshToken) )
+            !TryWriteAuthenticationCookies(
+                result.Response ,
+                result.RefreshToken) )
         {
-            DeleteRefreshTokenCookie();
+            DeleteAuthenticationCookies();
 
             return CreateUnexpectedSessionFailureResponse();
         }
-
-        WriteRefreshTokenCookie(result.RefreshToken);
 
         return Ok(result.Response);
     }
@@ -136,7 +148,7 @@ public sealed class AuthController : ControllerBase
         CancellationToken cancellationToken )
     {
         Request.Cookies.TryGetValue(
-            RefreshTokenCookieName ,
+            AuthenticationCookieNames.CustomerRefreshToken ,
             out var refreshToken);
 
         await _authenticationService.LogoutAsync(
@@ -144,9 +156,59 @@ public sealed class AuthController : ControllerBase
             GetClientIpAddress() ,
             cancellationToken);
 
-        DeleteRefreshTokenCookie();
+        DeleteAuthenticationCookies();
 
         return NoContent();
+    }
+
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentUser(
+        CancellationToken cancellationToken )
+    {
+        if ( !User.TryGetUserId(
+                out var userId) )
+        {
+            return CreateProfileFailureResponse(
+                CustomerUserProfileResult.Failure(
+                    AuthenticationErrorCodes.InvalidCredentials ,
+                    "The authenticated customer account is invalid."));
+        }
+
+        var result =
+            await _userProfileService.GetAsync(
+                userId ,
+                cancellationToken);
+
+        if ( !result.Succeeded )
+        {
+            return CreateProfileFailureResponse(result);
+        }
+
+        if ( result.User is null )
+        {
+            var problemDetails =
+                new ProblemDetails
+                {
+                    Status =
+                        StatusCodes.Status500InternalServerError ,
+
+                    Title =
+                        "Customer profile retrieval failed." ,
+
+                    Detail =
+                        "The customer profile could not be returned."
+                };
+
+            problemDetails.Extensions["code"] =
+                "authentication.customer_profile_failed";
+
+            return StatusCode(
+                StatusCodes.Status500InternalServerError ,
+                problemDetails);
+        }
+
+        return Ok(result.User);
     }
 
     [AllowAnonymous]
@@ -214,10 +276,33 @@ public sealed class AuthController : ControllerBase
         }
 
         // Existing refresh tokens are revoked in the database.
-        // Delete the local browser cookie as well.
-        DeleteRefreshTokenCookie();
+        // Delete the local browser cookies as well.
+        DeleteAuthenticationCookies();
 
         return NoContent();
+    }
+
+    private bool TryWriteAuthenticationCookies(
+        AuthenticationResponse response ,
+        string? refreshToken )
+    {
+        if ( string.IsNullOrWhiteSpace(response.AccessToken) ||
+            response.AccessTokenExpiresAtUtc == default ||
+            string.IsNullOrWhiteSpace(refreshToken) )
+        {
+            return false;
+        }
+
+        Response.Cookies.Append(
+            AuthenticationCookieNames.AccessToken ,
+            response.AccessToken ,
+            AuthenticationCookieOptionsFactory
+                .CreateAccessToken(
+                    response.AccessTokenExpiresAtUtc));
+
+        WriteRefreshTokenCookie(refreshToken);
+
+        return true;
     }
 
     private void WriteRefreshTokenCookie(
@@ -229,35 +314,26 @@ public sealed class AuthController : ControllerBase
                 .AddDays(_jwtSettings.RefreshTokenDays);
 
         Response.Cookies.Append(
-            RefreshTokenCookieName ,
+            AuthenticationCookieNames.CustomerRefreshToken ,
             refreshToken ,
-            new CookieOptions
-            {
-                HttpOnly = true ,
-
-                // Allows local HTTP development.
-                // Production must run through HTTPS.
-                Secure = Request.IsHttps ,
-
-                SameSite = SameSiteMode.Lax ,
-                IsEssential = true ,
-                Expires = expiresAt ,
-                Path = "/api/auth"
-            });
+            AuthenticationCookieOptionsFactory
+                .CreateRefreshToken(
+                    expiresAt ,
+                    RefreshTokenCookiePath));
     }
 
-    private void DeleteRefreshTokenCookie()
+    private void DeleteAuthenticationCookies()
     {
         Response.Cookies.Delete(
-            RefreshTokenCookieName ,
-            new CookieOptions
-            {
-                HttpOnly = true ,
-                Secure = Request.IsHttps ,
-                SameSite = SameSiteMode.Lax ,
-                IsEssential = true ,
-                Path = "/api/auth"
-            });
+            AuthenticationCookieNames.AccessToken ,
+            AuthenticationCookieOptionsFactory
+                .CreateDeletion("/"));
+
+        Response.Cookies.Delete(
+            AuthenticationCookieNames.CustomerRefreshToken ,
+            AuthenticationCookieOptionsFactory
+                .CreateDeletion(
+                    RefreshTokenCookiePath));
     }
 
     private string? GetClientIpAddress()
@@ -406,6 +482,41 @@ public sealed class AuthController : ControllerBase
             result.ErrorCode
             ?? AuthenticationErrorCodes
                 .PasswordResetCodeInvalid;
+
+        return StatusCode(
+            statusCode ,
+            problemDetails);
+    }
+
+    private IActionResult CreateProfileFailureResponse(
+        CustomerUserProfileResult result )
+    {
+        var statusCode =
+            result.ErrorCode switch
+            {
+                AuthenticationErrorCodes.AccountBlocked =>
+                    StatusCodes.Status403Forbidden,
+
+                _ =>
+                    StatusCodes.Status401Unauthorized
+            };
+
+        var problemDetails =
+            new ProblemDetails
+            {
+                Status = statusCode ,
+
+                Title =
+                    "Customer profile request failed." ,
+
+                Detail =
+                    result.ErrorMessage
+                    ?? "The customer profile could not be retrieved."
+            };
+
+        problemDetails.Extensions["code"] =
+            result.ErrorCode
+            ?? AuthenticationErrorCodes.InvalidCredentials;
 
         return StatusCode(
             statusCode ,
