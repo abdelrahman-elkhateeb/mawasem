@@ -1,6 +1,8 @@
-﻿using Mawasem.API.Authorization;
+﻿using Mawasem.API.Authentication;
+using Mawasem.API.Authorization;
 using Mawasem.API.Extensions;
 using Mawasem.Application.Features.Authentication.Contracts.Requests;
+using Mawasem.Application.Features.Authentication.Contracts.Responses;
 using Mawasem.Application.Features.Authentication.Interfaces;
 using Mawasem.Application.Features.Authentication.Models;
 using Mawasem.Application.Features.Authentication.Options;
@@ -15,8 +17,8 @@ namespace Mawasem.API.Controllers;
 [Route("api/admin/auth")]
 public sealed class AdminAuthController : ControllerBase
 {
-    private const string RefreshTokenCookieName =
-        "mawasem_dashboard_refresh_token";
+    private const string RefreshTokenCookiePath =
+        "/api/admin/auth";
 
     private readonly IDashboardAuthenticationService
         _authenticationService;
@@ -25,6 +27,7 @@ public sealed class AdminAuthController : ControllerBase
         _userProfileService;
 
     private readonly JwtSettings _jwtSettings;
+
     private readonly TimeProvider _timeProvider;
 
     public AdminAuthController(
@@ -57,12 +60,14 @@ public sealed class AdminAuthController : ControllerBase
         }
 
         if ( result.Response is null ||
-            string.IsNullOrWhiteSpace(result.RefreshToken) )
+            !TryWriteAuthenticationCookies(
+                result.Response ,
+                result.RefreshToken) )
         {
+            DeleteAuthenticationCookies();
+
             return CreateUnexpectedSessionFailureResponse();
         }
-
-        WriteRefreshTokenCookie(result.RefreshToken);
 
         return Ok(result.Response);
     }
@@ -73,7 +78,7 @@ public sealed class AdminAuthController : ControllerBase
         CancellationToken cancellationToken )
     {
         Request.Cookies.TryGetValue(
-            RefreshTokenCookieName ,
+            AuthenticationCookieNames.DashboardRefreshToken ,
             out var refreshToken);
 
         var result =
@@ -84,20 +89,20 @@ public sealed class AdminAuthController : ControllerBase
 
         if ( !result.Succeeded )
         {
-            DeleteRefreshTokenCookie();
+            DeleteAuthenticationCookies();
 
             return CreateSessionFailureResponse(result);
         }
 
         if ( result.Response is null ||
-            string.IsNullOrWhiteSpace(result.RefreshToken) )
+            !TryWriteAuthenticationCookies(
+                result.Response ,
+                result.RefreshToken) )
         {
-            DeleteRefreshTokenCookie();
+            DeleteAuthenticationCookies();
 
             return CreateUnexpectedSessionFailureResponse();
         }
-
-        WriteRefreshTokenCookie(result.RefreshToken);
 
         return Ok(result.Response);
     }
@@ -108,7 +113,7 @@ public sealed class AdminAuthController : ControllerBase
         CancellationToken cancellationToken )
     {
         Request.Cookies.TryGetValue(
-            RefreshTokenCookieName ,
+            AuthenticationCookieNames.DashboardRefreshToken ,
             out var refreshToken);
 
         await _authenticationService.LogoutAsync(
@@ -116,7 +121,7 @@ public sealed class AdminAuthController : ControllerBase
             GetClientIpAddress() ,
             cancellationToken);
 
-        DeleteRefreshTokenCookie();
+        DeleteAuthenticationCookies();
 
         return NoContent();
     }
@@ -199,9 +204,32 @@ public sealed class AdminAuthController : ControllerBase
             return CreateOperationFailureResponse(result);
         }
 
-        DeleteRefreshTokenCookie();
+        DeleteAuthenticationCookies();
 
         return NoContent();
+    }
+
+    private bool TryWriteAuthenticationCookies(
+        DashboardAuthenticationResponse response ,
+        string? refreshToken )
+    {
+        if ( string.IsNullOrWhiteSpace(response.AccessToken) ||
+            response.AccessTokenExpiresAtUtc == default ||
+            string.IsNullOrWhiteSpace(refreshToken) )
+        {
+            return false;
+        }
+
+        Response.Cookies.Append(
+            AuthenticationCookieNames.AccessToken ,
+            response.AccessToken ,
+            AuthenticationCookieOptionsFactory
+                .CreateAccessToken(
+                    response.AccessTokenExpiresAtUtc));
+
+        WriteRefreshTokenCookie(refreshToken);
+
+        return true;
     }
 
     private void WriteRefreshTokenCookie(
@@ -213,35 +241,26 @@ public sealed class AdminAuthController : ControllerBase
                 .AddDays(_jwtSettings.RefreshTokenDays);
 
         Response.Cookies.Append(
-            RefreshTokenCookieName ,
+            AuthenticationCookieNames.DashboardRefreshToken ,
             refreshToken ,
-            new CookieOptions
-            {
-                HttpOnly = true ,
-
-                // Allows local HTTP development.
-                // Production must run through HTTPS.
-                Secure = Request.IsHttps ,
-
-                SameSite = SameSiteMode.Lax ,
-                IsEssential = true ,
-                Expires = expiresAt ,
-                Path = "/api/admin/auth"
-            });
+            AuthenticationCookieOptionsFactory
+                .CreateRefreshToken(
+                    expiresAt ,
+                    RefreshTokenCookiePath));
     }
 
-    private void DeleteRefreshTokenCookie()
+    private void DeleteAuthenticationCookies()
     {
         Response.Cookies.Delete(
-            RefreshTokenCookieName ,
-            new CookieOptions
-            {
-                HttpOnly = true ,
-                Secure = Request.IsHttps ,
-                SameSite = SameSiteMode.Lax ,
-                IsEssential = true ,
-                Path = "/api/admin/auth"
-            });
+            AuthenticationCookieNames.AccessToken ,
+            AuthenticationCookieOptionsFactory
+                .CreateDeletion("/"));
+
+        Response.Cookies.Delete(
+            AuthenticationCookieNames.DashboardRefreshToken ,
+            AuthenticationCookieOptionsFactory
+                .CreateDeletion(
+                    RefreshTokenCookiePath));
     }
 
     private string? GetClientIpAddress()
@@ -271,7 +290,7 @@ public sealed class AdminAuthController : ControllerBase
                     StatusCodes.Status403Forbidden,
 
                 AuthenticationErrorCodes.AccountLocked =>
-                    423,
+                    StatusCodes.Status423Locked,
 
                 _ =>
                     StatusCodes.Status400BadRequest
@@ -326,7 +345,7 @@ public sealed class AdminAuthController : ControllerBase
                     StatusCodes.Status403Forbidden,
 
                 AuthenticationErrorCodes.AccountLocked =>
-                    423,
+                    StatusCodes.Status423Locked,
 
                 _ =>
                     StatusCodes.Status400BadRequest
@@ -401,7 +420,8 @@ public sealed class AdminAuthController : ControllerBase
                     "Dashboard authentication session creation failed." ,
 
                 Detail =
-                    "The account operation succeeded, but the dashboard authentication session could not be created."
+                    "The account operation succeeded, but the " +
+                    "dashboard authentication session could not be created."
             };
 
         problemDetails.Extensions["code"] =
