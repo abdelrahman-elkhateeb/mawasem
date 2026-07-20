@@ -14,7 +14,7 @@ export function ProtectedRoute({
   }
 
   if (!data?.user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/auth/login" replace />;
   }
 
   return children;

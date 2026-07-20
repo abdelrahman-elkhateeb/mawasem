@@ -15,12 +15,13 @@ import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { BookOpen } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const navigate = useNavigate();
   const { isUserLoading, loginUser, error } = useLogin();
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
@@ -34,8 +35,9 @@ export function LoginForm({
   function onSubmit(data: LoginFormData) {
     loginUser(data, {
       onSuccess: () => {
-        console.log("success");
-
+        navigate("/", {
+          replace: true
+        });
       }
     })
   }

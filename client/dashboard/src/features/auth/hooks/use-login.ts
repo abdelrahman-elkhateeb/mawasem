@@ -8,8 +8,8 @@ export function useLogin() {
   const { isPending: isUserLoading, mutate: loginUser, error } = useMutation({
     mutationFn: login,
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
         queryKey: ["me"],
       });
     }

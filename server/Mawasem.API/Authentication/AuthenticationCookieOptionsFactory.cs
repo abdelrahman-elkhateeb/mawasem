@@ -40,7 +40,7 @@ public static class AuthenticationCookieOptionsFactory
         {
             HttpOnly = true ,
             Secure = true ,
-            SameSite = SameSiteMode.Strict ,
+            SameSite = SameSiteMode.None,
             IsEssential = true ,
             Expires = expiresAtUtc ,
             Path = path
