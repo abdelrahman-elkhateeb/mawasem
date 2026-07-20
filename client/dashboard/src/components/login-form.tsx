@@ -34,12 +34,20 @@ export function LoginForm({
 
   function onSubmit(data: LoginFormData) {
     loginUser(data, {
-      onSuccess: () => {
+      onSuccess: (response) => {
+        if (response.user.mustChangePassword) {
+          navigate("/auth/change-password", {
+            replace: true,
+          });
+
+          return;
+        }
+
         navigate("/", {
-          replace: true
+          replace: true,
         });
-      }
-    })
+      },
+    });
   }
 
   return (

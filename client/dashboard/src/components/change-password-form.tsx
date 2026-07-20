@@ -21,7 +21,7 @@ export function ChangePasswordForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const { changePassword, isPending } = useChangePassword();
+  const { changePassword, isLoading } = useChangePassword();
 
   const {
     register,
@@ -39,7 +39,7 @@ export function ChangePasswordForm({
   function onSubmit(data: ChangePasswordFormData) {
     console.log(data);
 
-    // changePassword(data);
+    changePassword(data);
   }
 
   return (
@@ -123,9 +123,9 @@ export function ChangePasswordForm({
             <Button
               type="submit"
               className="w-full"
-            // disabled={isPending}
+              disabled={isLoading}
             >
-              {/* {isPending ? "Loading..." : "Change password"} */}
+              {isLoading ? "Loading..." : "Change password"}
               Change password
             </Button>
           </Field>

@@ -2,7 +2,6 @@ import AdminLayout from "@/layouts/AdminLayout";
 import DashboardPage from "@/pages/Home/DashboardPage";
 import type { RouteObject } from "react-router-dom";
 import { ProtectedRoute } from "./protected-route";
-import ChangePasswordPage from "@/features/auth/pages/changePasswordPage";
 
 export const dashboardRoutes: RouteObject = {
   path: "/",
@@ -15,10 +14,6 @@ export const dashboardRoutes: RouteObject = {
     {
       index: true,
       element: <DashboardPage />,
-    },
-    {
-      path: "change-password",
-      element: <ChangePasswordPage />,
     },
   ],
 };

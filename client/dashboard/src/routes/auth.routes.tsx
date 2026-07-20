@@ -2,6 +2,7 @@ import AuthLayout from "@/layouts/AuthLayout";
 import LoginPage from "@/features/auth/pages/LoginPage";
 import SignupPage from "@/features/auth/pages/SignupPage";
 import type { RouteObject } from "react-router-dom";
+import ChangePasswordPage from "@/features/auth/pages/changePasswordPage";
 
 export const authRoutes: RouteObject = {
   path: "/auth",
@@ -15,6 +16,9 @@ export const authRoutes: RouteObject = {
       path: "signup",
       element: <SignupPage />,
     },
-
+    {
+      path: "change-password",
+      element: <ChangePasswordPage />,
+    }
   ],
 };

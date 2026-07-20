@@ -18,7 +18,7 @@ export function ProtectedRoute({
   }
 
   if (
-    data.user.mustChangePassword &&
+    data.mustChangePassword &&
     location.pathname !== "/change-password"
   ) {
     return (
