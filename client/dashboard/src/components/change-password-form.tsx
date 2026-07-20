@@ -37,8 +37,6 @@ export function ChangePasswordForm({
   });
 
   function onSubmit(data: ChangePasswordFormData) {
-    console.log(data);
-
     changePassword(data);
   }
 

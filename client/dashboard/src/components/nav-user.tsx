@@ -1,8 +1,7 @@
 "use client"
 import {
   Avatar,
-  AvatarFallback,
-  AvatarImage,
+  AvatarFallback
 } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -18,32 +17,25 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { useLogout } from "@/features/auth/hooks/use-logout"
+import { useMe } from "@/features/auth/hooks/use-me"
 import {
   ChevronsUpDown,
   LogOut
 } from "lucide-react"
-import { Button } from "./ui/button"
-import { useLogout } from "@/features/auth/hooks/use-logout"
 
-interface User {
-  name: string;
-  email: string;
-  avatar: string;
-}
 
-const defaultUser: User = {
-  name: "Abdelrahman Elkhateeb",
-  email: "abdelrahman@gmail.com",
-  avatar: "/images/default-avatar.png",
-};
+export function NavUser() {
+  const { isMobile } = useSidebar();
 
-export function NavUser({
-  user = defaultUser,
-}: {
-  user?: User;
-}) {
-  const { isMobile } = useSidebar()
-  const { logout, isLoading } = useLogout();
+  const { logout, isLoading: isLogoutLoading } = useLogout();
+
+  const { data: user, isLoading } = useMe();
+
+  if (isLoading || !user) {
+    return null;
+  }
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -51,19 +43,31 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="
+                data-[state=open]:bg-sidebar-accent
+                data-[state=open]:text-sidebar-accent-foreground
+              "
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarFallback className="rounded-lg">
+                  {user.fullNameAr.slice(0, 2)}
+                </AvatarFallback>
               </Avatar>
+
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate font-medium">
+                  {user.fullNameAr}
+                </span>
+
+                <span className="truncate text-xs">
+                  {user.email}
+                </span>
               </div>
+
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
+
           <DropdownMenuContent
             className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
             side={isMobile ? "bottom" : "right"}
@@ -73,29 +77,35 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {user.fullNameAr.slice(0, 2)}
+                  </AvatarFallback>
                 </Avatar>
+
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate font-medium">
+                    {user.fullNameAr}
+                  </span>
+
+                  <span className="truncate text-xs">
+                    {user.email}
+                  </span>
                 </div>
               </div>
             </DropdownMenuLabel>
 
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+
+            <DropdownMenuItem onClick={() => logout()}>
               <LogOut />
-              <Button
-                variant="ghost"
-                className="m-0 p-0 h-0"
-                disabled={isLoading}
-                onClick={() => logout()}
-              >{isLoading ? "loading..." : "Log out"}</Button>
+
+              <span>
+                {isLogoutLoading ? "Loading..." : "Log out"}
+              </span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }

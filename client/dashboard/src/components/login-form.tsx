@@ -22,7 +22,7 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   const navigate = useNavigate();
-  const { isUserLoading, loginUser, error } = useLogin();
+  const { isUserLoading, loginUser } = useLogin();
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -69,10 +69,6 @@ export function LoginForm({
             <h1 className="text-xl font-bold">
               Welcome back to Mawasem
             </h1>
-
-            <FieldDescription>
-              Don&apos;t have an account? <Link to="/auth/signup">Sign up</Link>
-            </FieldDescription>
           </div>
 
           <Field>
