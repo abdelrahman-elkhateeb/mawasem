@@ -22,6 +22,8 @@ import {
   ChevronsUpDown,
   LogOut
 } from "lucide-react"
+import { Button } from "./ui/button"
+import { useLogout } from "@/features/auth/hooks/use-logout"
 
 interface User {
   name: string;
@@ -41,6 +43,7 @@ export function NavUser({
   user?: User;
 }) {
   const { isMobile } = useSidebar()
+  const { logout, isLoading } = useLogout();
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -83,7 +86,12 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <LogOut />
-              Log out
+              <Button
+                variant="ghost"
+                className="m-0 p-0 h-0"
+                disabled={isLoading}
+                onClick={() => logout()}
+              >{isLoading ? "loading..." : "Log out"}</Button>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

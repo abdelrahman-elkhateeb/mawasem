@@ -13,7 +13,7 @@ export function ProtectedRoute({
     return <p>Loading...</p>;
   }
 
-  if (!data?.user) {
+  if (!data) {
     return <Navigate to="/auth/login" replace />;
   }
 
