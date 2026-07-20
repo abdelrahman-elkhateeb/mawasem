@@ -17,5 +17,16 @@ export function ProtectedRoute({
     return <Navigate to="/auth/login" replace />;
   }
 
+  if (
+    data.user.mustChangePassword &&
+    location.pathname !== "/change-password"
+  ) {
+    return (
+      <Navigate
+        to="/change-password"
+        replace
+      />
+    );
+  }
   return children;
 }

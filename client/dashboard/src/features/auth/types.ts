@@ -17,3 +17,9 @@ export interface LoginData {
   email: string;
   password: string;
 }
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+  confirmNewPassword: string;
+}

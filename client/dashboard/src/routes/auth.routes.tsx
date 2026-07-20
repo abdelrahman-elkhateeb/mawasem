@@ -1,6 +1,6 @@
 import AuthLayout from "@/layouts/AuthLayout";
-import LoginPage from "@/pages/auth/LoginPage";
-import SignupPage from "@/pages/auth/SignupPage";
+import LoginPage from "@/features/auth/pages/LoginPage";
+import SignupPage from "@/features/auth/pages/SignupPage";
 import type { RouteObject } from "react-router-dom";
 
 export const authRoutes: RouteObject = {
@@ -15,5 +15,6 @@ export const authRoutes: RouteObject = {
       path: "signup",
       element: <SignupPage />,
     },
+
   ],
 };
