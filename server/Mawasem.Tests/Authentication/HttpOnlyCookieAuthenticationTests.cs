@@ -90,7 +90,7 @@ public sealed class HttpOnlyCookieAuthenticationTests
             2 ,
             cookies.Length);
 
-        AssertSecureHttpOnlyStrictCookie(
+        AssertSecureHttpOnlyNoneCookie(
             Assert.Single(
                 cookies.Where(cookie =>
                     cookie.StartsWith(
@@ -98,7 +98,7 @@ public sealed class HttpOnlyCookieAuthenticationTests
                         StringComparison.Ordinal))) ,
             expectedPath: "/");
 
-        AssertSecureHttpOnlyStrictCookie(
+        AssertSecureHttpOnlyNoneCookie(
             Assert.Single(
                 cookies.Where(cookie =>
                     cookie.StartsWith(
@@ -187,7 +187,7 @@ public sealed class HttpOnlyCookieAuthenticationTests
             2 ,
             cookies.Length);
 
-        AssertSecureHttpOnlyStrictCookie(
+        AssertSecureHttpOnlyNoneCookie(
             Assert.Single(
                 cookies.Where(cookie =>
                     cookie.StartsWith(
@@ -195,7 +195,7 @@ public sealed class HttpOnlyCookieAuthenticationTests
                         StringComparison.Ordinal))) ,
             expectedPath: "/");
 
-        AssertSecureHttpOnlyStrictCookie(
+        AssertSecureHttpOnlyNoneCookie(
             Assert.Single(
                 cookies.Where(cookie =>
                     cookie.StartsWith(
@@ -257,7 +257,7 @@ public sealed class HttpOnlyCookieAuthenticationTests
             .ToArray();
     }
 
-    private static void AssertSecureHttpOnlyStrictCookie(
+    private static void AssertSecureHttpOnlyNoneCookie(
         string cookie ,
         string expectedPath )
     {
@@ -273,7 +273,7 @@ public sealed class HttpOnlyCookieAuthenticationTests
             normalizedCookie);
 
         Assert.Contains(
-            "samesite=strict" ,
+            "samesite=none" ,
             normalizedCookie);
 
         Assert.Contains(
