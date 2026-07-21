@@ -21,7 +21,7 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   const navigate = useNavigate();
-  const { isUserLoading, loginUser } = useLogin();
+  const { isUserLoading, loginUser, errorMessage } = useLogin();
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -97,9 +97,17 @@ export function LoginForm({
             />
           </Field>
 
+          {errorMessage && (
+            <Field>
+              <div className="border border-destructive/30 bg-destructive/10 p-3">
+                <FieldError className="m-0">{errorMessage}</FieldError>
+              </div>
+            </Field>
+          )}
+
           <Field>
             <Button type="submit" className="w-full" disabled={isUserLoading}>
-              {isUserLoading ? "loading..." : "Login"}
+              {isUserLoading ? "Loading..." : "Login"}
             </Button>
           </Field>
         </FieldGroup>
