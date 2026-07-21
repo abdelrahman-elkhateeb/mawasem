@@ -24,5 +24,14 @@ public class ProductOptionConfiguration : IEntityTypeConfiguration<ProductOption
                 .HasMaxLength(100)
                 .IsRequired();
         });
+
+        builder.Property(x => x.Type)
+            .HasConversion<int>()
+            .IsRequired();
+
+        builder.HasIndex(x => x.Type)
+            .IsUnique()
+            .HasFilter("[Type] = 2")
+            .HasDatabaseName("UX_ProductOptions_SingleColorOption");
     }
 }

@@ -4,11 +4,17 @@ namespace Mawasem.Domain.Catalog;
 
 public class ProductImage : BaseAuditableEntity
 {
-    public int ProductVariantId { get; set; }
+    public int ProductId { get; set; }
 
-    public ProductVariant ProductVariant { get; set; } = null!;
+    public Product Product { get; set; } = null!;
+
+    public int? ColorOptionValueId { get; set; }
+
+    public ProductOptionValue? ColorOptionValue { get; set; }
 
     public string ImageUrl { get; set; } = string.Empty;
+
+    public string StorageKey { get; set; } = string.Empty;
 
     public bool IsPrimary { get; set; }
 

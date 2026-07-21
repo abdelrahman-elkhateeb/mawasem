@@ -19,7 +19,4 @@ public class ProductVariant : BaseAuditableEntity
 
     public ICollection<ProductVariantOption> Options { get; set; } =
         new List<ProductVariantOption>();
-
-    public ICollection<ProductImage> Images { get; set; } =
-        new List<ProductImage>();
 }

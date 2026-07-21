@@ -28,17 +28,27 @@ public class Product : BaseAuditableEntity
     public Season Season { get; set; } = null!;
 
     // Navigation
-    public ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();
+    public ICollection<ProductVariant> Variants { get; set; } =
+        new List<ProductVariant>();
 
-    public ICollection<ProductSpecification> Specifications { get; set; } = new List<ProductSpecification>();
+    public ICollection<ProductImage> Images { get; set; } =
+        new List<ProductImage>();
 
-    public ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
+    public ICollection<ProductSpecification> Specifications { get; set; } =
+        new List<ProductSpecification>();
 
-    public ICollection<ProductCollection> ProductCollections { get; set; } = new List<ProductCollection>();
+    public ICollection<ProductCategory> ProductCategories { get; set; } =
+        new List<ProductCategory>();
 
-    public ICollection<ProductGrade> ProductGrades { get; set; } = new List<ProductGrade>();
+    public ICollection<ProductCollection> ProductCollections { get; set; } =
+        new List<ProductCollection>();
 
-    public ICollection<ProductTag> ProductTags { get; set; } = new List<ProductTag>();
+    public ICollection<ProductGrade> ProductGrades { get; set; } =
+        new List<ProductGrade>();
 
-    public ICollection<Review> Reviews { get; set; } = new List<Review>();
+    public ICollection<ProductTag> ProductTags { get; set; } =
+        new List<ProductTag>();
+
+    public ICollection<Review> Reviews { get; set; } =
+        new List<Review>();
 }
