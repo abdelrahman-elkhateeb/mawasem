@@ -343,6 +343,14 @@ builder.Services.AddScoped<
     ProductManagementService>();
 
 builder.Services.AddScoped<
+    IProductOptionManagementService ,
+    ProductOptionManagementService>();
+
+builder.Services.AddScoped<
+    IProductVariantManagementService ,
+    ProductVariantManagementService>();
+
+builder.Services.AddScoped<
     IRolePermissionManagementService ,
     RolePermissionManagementService>();
 

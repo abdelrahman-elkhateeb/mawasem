@@ -9,11 +9,17 @@ public class ProductVariant : BaseAuditableEntity
 
     public string SKU { get; set; } = string.Empty;
 
+    public string OptionCombinationKey { get; set; } = string.Empty;
+
     public int StockQuantity { get; set; }
 
     public bool IsAvailable { get; set; } = true;
 
-    public ICollection<ProductVariantOption> Options { get; set; } = new List<ProductVariantOption>();
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
-    public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
+    public ICollection<ProductVariantOption> Options { get; set; } =
+        new List<ProductVariantOption>();
+
+    public ICollection<ProductImage> Images { get; set; } =
+        new List<ProductImage>();
 }
