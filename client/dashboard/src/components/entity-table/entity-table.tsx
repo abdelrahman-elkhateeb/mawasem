@@ -1,4 +1,3 @@
-import type { ColumnDef } from "@tanstack/react-table";
 
 import {
   flexRender,
@@ -14,11 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { EntityTableProps } from "./types";
 
-interface EntityTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
-  data: TData[];
-}
 
 export function EntityTable<TData, TValue>({
   columns,

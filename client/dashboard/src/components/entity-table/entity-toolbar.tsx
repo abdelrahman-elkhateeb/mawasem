@@ -2,14 +2,7 @@ import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-interface EntityToolbarProps {
-  search: string;
-  onSearch: (value: string) => void;
-
-  buttonText: string;
-  onAdd: () => void;
-}
+import type { EntityToolbarProps } from "./types";
 
 export function EntityToolbar({
   search,

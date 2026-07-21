@@ -1,13 +1,5 @@
 import { Button } from "@/components/ui/button";
-
-interface EntityPaginationProps {
-  totalCount: number;
-  page: number;
-  totalPages: number;
-  onPageChange: (
-    page: number
-  ) => void;
-}
+import type { EntityPaginationProps } from "./types";
 
 export function EntityPagination({
   totalCount,
