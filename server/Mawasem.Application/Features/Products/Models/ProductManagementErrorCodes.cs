@@ -16,4 +16,13 @@ public static class ProductManagementErrorCodes
 
     public const string CannotPublish =
         "products.cannot_publish";
+
+    public const string InvalidImage =
+        "products.invalid_image";
+
+    public const string ImageNotFound =
+        "products.image_not_found";
+
+    public const string InvalidImageOrder =
+        "products.invalid_image_order";
 }

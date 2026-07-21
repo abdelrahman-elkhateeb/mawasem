@@ -11,5 +11,9 @@ public class ProductOptionValue : BaseAuditableEntity
 
     public LocalizedText Value { get; set; } = new("" , "");
 
-    public ICollection<ProductVariantOption> ProductVariantOptions { get; set; } = new List<ProductVariantOption>();
+    public ICollection<ProductVariantOption> ProductVariantOptions { get; set; } =
+        new List<ProductVariantOption>();
+
+    public ICollection<ProductImage> ColorImages { get; set; } =
+        new List<ProductImage>();
 }

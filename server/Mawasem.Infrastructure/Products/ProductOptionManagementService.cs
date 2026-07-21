@@ -4,6 +4,7 @@ using Mawasem.Application.Features.Products.Interfaces;
 using Mawasem.Application.Features.Products.Models;
 using Mawasem.Domain.Catalog;
 using Mawasem.Domain.Common.ValueObjects;
+using Mawasem.Domain.Enums;
 using Mawasem.Infrastructure.Persistence.Contexts;
 using Microsoft.EntityFrameworkCore;
 
@@ -69,13 +70,44 @@ public sealed class ProductOptionManagementService
                     validationError);
         }
 
+        if ( !Enum.IsDefined(
+                 typeof(ProductOptionType) ,
+                 request.Type) )
+        {
+            return ProductManagementResult<
+                ProductOptionResponse>.Failure(
+                    ProductManagementErrorCodes.InvalidRequest ,
+                    "The product option type is invalid.");
+        }
+
+        if ( request.Type == ProductOptionType.Color )
+        {
+            var colorOptionExists =
+                await _dbContext
+                    .Set<ProductOption>()
+                    .AnyAsync(
+                        x => x.Type ==
+                             ProductOptionType.Color ,
+                        cancellationToken);
+
+            if ( colorOptionExists )
+            {
+                return ProductManagementResult<
+                    ProductOptionResponse>.Failure(
+                        ProductManagementErrorCodes.InvalidRequest ,
+                        "A color product option already exists.");
+            }
+        }
+
         var option =
             new ProductOption
             {
                 Name =
                     new LocalizedText(
                         request.NameEn.Trim() ,
-                        request.NameAr.Trim())
+                        request.NameAr.Trim()) ,
+
+                Type = request.Type
             };
 
         _dbContext
@@ -313,6 +345,7 @@ public sealed class ProductOptionManagementService
             Id = option.Id ,
             NameAr = option.Name.Arabic ,
             NameEn = option.Name.English ,
+            Type = option.Type ,
 
             Values =
                 option.Values

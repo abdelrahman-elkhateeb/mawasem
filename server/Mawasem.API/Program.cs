@@ -23,6 +23,7 @@ using Mawasem.Infrastructure.Persistence.Seed;
 using Mawasem.Infrastructure.Products;
 using Mawasem.Infrastructure.Roles;
 using Mawasem.Infrastructure.Seasons;
+using Mawasem.Infrastructure.Storage.Images;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -351,6 +352,10 @@ builder.Services.AddScoped<
     ProductVariantManagementService>();
 
 builder.Services.AddScoped<
+    IProductImageManagementService ,
+    ProductImageManagementService>();
+
+builder.Services.AddScoped<
     IRolePermissionManagementService ,
     RolePermissionManagementService>();
 
@@ -366,6 +371,24 @@ builder.Services.AddScoped<
 
 builder.Services.AddScoped<
     FirstSuperAdminSeeder>();
+
+builder.Services.Configure<ProductImageStorageOptions>(
+    options =>
+    {
+        options.RootPath =
+            Path.Combine(
+                builder.Environment.ContentRootPath ,
+                "wwwroot" ,
+                "uploads" ,
+                "products");
+
+        options.RequestPath =
+            "/uploads/products";
+    });
+
+builder.Services.AddSingleton<
+    IProductImageStorage ,
+    LocalProductImageStorage>();
 
 var app = builder.Build();
 

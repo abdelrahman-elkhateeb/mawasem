@@ -15,7 +15,6 @@
     <Folder Include="Payments\Paymob\" />
     <Folder Include="Persistence\Migrations\" />
     <Folder Include="Services\" />
-    <Folder Include="Storage\Images\" />
   </ItemGroup>
 
   <ItemGroup>
