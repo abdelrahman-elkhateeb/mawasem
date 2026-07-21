@@ -1,4 +1,4 @@
-﻿using Mawasem.Application.Features.Authentication.Contracts.Requests;
+using Mawasem.Application.Features.Authentication.Contracts.Requests;
 using Mawasem.Application.Features.Authentication.Contracts.Responses;
 using Mawasem.Application.Features.Authentication.Interfaces;
 using Mawasem.Application.Features.Authentication.Models;
@@ -84,12 +84,6 @@ public sealed class DashboardAuthenticationService
             return InvalidCredentials();
         }
 
-        if ( _userManager.SupportsUserLockout &&
-            await _userManager.IsLockedOutAsync(user) )
-        {
-            return AccountLocked();
-        }
-
         var passwordIsCorrect =
             await _userManager.CheckPasswordAsync(
                 user ,
@@ -97,39 +91,7 @@ public sealed class DashboardAuthenticationService
 
         if ( !passwordIsCorrect )
         {
-            if ( _userManager.SupportsUserLockout )
-            {
-                var accessFailedResult =
-                    await _userManager.AccessFailedAsync(user);
-
-                if ( !accessFailedResult.Succeeded )
-                {
-                    return OperationFailure(
-                        AuthenticationErrorCodes.InvalidCredentials ,
-                        "The login attempt could not be completed.");
-                }
-
-                if ( await _userManager.IsLockedOutAsync(user) )
-                {
-                    return AccountLocked();
-                }
-            }
-
             return InvalidCredentials();
-        }
-
-        if ( _userManager.SupportsUserLockout )
-        {
-            var resetFailureCountResult =
-                await _userManager
-                    .ResetAccessFailedCountAsync(user);
-
-            if ( !resetFailureCountResult.Succeeded )
-            {
-                return OperationFailure(
-                    AuthenticationErrorCodes.InvalidCredentials ,
-                    "The login attempt could not be completed.");
-            }
         }
 
         return await CreateSessionAsync(
@@ -137,7 +99,6 @@ public sealed class DashboardAuthenticationService
             ipAddress ,
             cancellationToken);
     }
-
     public async Task<DashboardAuthenticationSessionResult> RefreshAsync(
         string? refreshToken ,
         string? ipAddress ,
