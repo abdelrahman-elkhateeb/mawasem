@@ -11,16 +11,42 @@ import { brandColumns } from "@/components/entity-table/columns/brand-columns";
 export function BrandsPage() {
   const [search, setSearch] = useState("");
 
-  const [pageNumber, setPageNumber] = useState(1);
+  const [requestedPageNumber, setRequestedPageNumber] =
+    useState(1);
 
   const {
     data,
     //  isLoading
   } = useBrands({
     search,
-    pageNumber,
+    pageNumber: requestedPageNumber,
     pageSize: 10,
   });
+
+  const currentPage =
+    data?.pageNumber ?? requestedPageNumber;
+
+  const totalPages = data?.totalPages ?? 1;
+  const totalCount = data?.totalCount ?? 0;
+
+  const handleSearch = (value: string) => {
+    setSearch(value);
+    setRequestedPageNumber(1);
+  };
+
+  const handlePageChange = (
+    nextPage: number
+  ) => {
+    if (
+      nextPage < 1 ||
+      nextPage > totalPages ||
+      nextPage === currentPage
+    ) {
+      return;
+    }
+
+    setRequestedPageNumber(nextPage);
+  };
 
   const handleAddBrand = () => {
     console.log("Open add dialog");
@@ -40,7 +66,7 @@ export function BrandsPage() {
 
       <EntityToolbar
         search={search}
-        onSearch={setSearch}
+        onSearch={handleSearch}
         buttonText="Add Brand"
         onAdd={handleAddBrand}
       />
@@ -52,9 +78,10 @@ export function BrandsPage() {
       />
 
       <EntityPagination
-        page={pageNumber}
-        totalPages={data?.totalPages ?? 1}
-        onPageChange={setPageNumber}
+        totalCount={totalCount}
+        page={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
       />
     </div>
   );
