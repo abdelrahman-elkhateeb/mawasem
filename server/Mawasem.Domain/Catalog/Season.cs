@@ -15,4 +15,7 @@ public class Season : BaseAuditableEntity
 
     public ICollection<Product> Products { get; set; } =
         new List<Product>();
+
+    public ICollection<Collection> Collections { get; set; } =
+        new List<Collection>();
 }

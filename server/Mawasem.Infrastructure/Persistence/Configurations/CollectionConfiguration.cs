@@ -4,9 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Mawasem.Infrastructure.Persistence.Configurations;
 
-public class CollectionConfiguration : IEntityTypeConfiguration<Collection>
+public class CollectionConfiguration :
+    IEntityTypeConfiguration<Collection>
 {
-    public void Configure( EntityTypeBuilder<Collection> builder )
+    public void Configure(
+        EntityTypeBuilder<Collection> builder )
     {
         builder.ToTable("Collections");
 
@@ -24,5 +26,11 @@ public class CollectionConfiguration : IEntityTypeConfiguration<Collection>
                 .HasMaxLength(100)
                 .IsRequired();
         });
+
+        builder
+            .HasOne(x => x.Season)
+            .WithMany(x => x.Collections)
+            .HasForeignKey(x => x.SeasonId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

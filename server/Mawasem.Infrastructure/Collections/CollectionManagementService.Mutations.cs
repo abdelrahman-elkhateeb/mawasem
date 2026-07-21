@@ -20,10 +20,16 @@ public sealed partial class CollectionManagementService
 
         if ( actorUserId <= 0 )
         {
-            return CollectionManagementResult<CollectionResponse>
-                .Failure(
-                    CollectionManagementErrorCodes.InvalidRequest ,
-                    "The authenticated dashboard account is invalid.");
+            return CollectionManagementResult<CollectionResponse>.Failure(
+                CollectionManagementErrorCodes.InvalidRequest ,
+                "The authenticated dashboard account is invalid.");
+        }
+
+        if ( request.SeasonId <= 0 )
+        {
+            return CollectionManagementResult<CollectionResponse>.Failure(
+                CollectionManagementErrorCodes.InvalidRequest ,
+                "A valid season is required.");
         }
 
         if ( !TryNormalizeNames(
@@ -33,10 +39,18 @@ public sealed partial class CollectionManagementService
                 out var nameAr ,
                 out var validationError) )
         {
-            return CollectionManagementResult<CollectionResponse>
-                .Failure(
-                    CollectionManagementErrorCodes.InvalidRequest ,
-                    validationError);
+            return CollectionManagementResult<CollectionResponse>.Failure(
+                CollectionManagementErrorCodes.InvalidRequest ,
+                validationError);
+        }
+
+        if ( !await SeasonExistsAsync(
+                request.SeasonId ,
+                cancellationToken) )
+        {
+            return CollectionManagementResult<CollectionResponse>.Failure(
+                CollectionManagementErrorCodes.InvalidReference ,
+                "The selected season was not found or has been deleted.");
         }
 
         if ( await HasDuplicateNameAsync(
@@ -45,10 +59,9 @@ public sealed partial class CollectionManagementService
                 excludedCollectionId: null ,
                 cancellationToken) )
         {
-            return CollectionManagementResult<CollectionResponse>
-                .Failure(
-                    CollectionManagementErrorCodes.DuplicateName ,
-                    "A collection with the same Arabic or English name already exists.");
+            return CollectionManagementResult<CollectionResponse>.Failure(
+                CollectionManagementErrorCodes.DuplicateName ,
+                "A collection with the same Arabic or English name already exists.");
         }
 
         var now =
@@ -65,6 +78,8 @@ public sealed partial class CollectionManagementService
                     new LocalizedText(
                         nameEn ,
                         nameAr) ,
+                SeasonId =
+                    request.SeasonId ,
                 CreatedOn = now ,
                 CreatedBy = actor ,
                 IsDeleted = false
@@ -78,16 +93,12 @@ public sealed partial class CollectionManagementService
         var response =
             await GetResponseByIdAsync(
                 collection.Id ,
-                cancellationToken);
-
-        if ( response is null )
-        {
-            throw new InvalidOperationException(
+                cancellationToken)
+            ?? throw new InvalidOperationException(
                 "The collection was created but could not be reloaded.");
-        }
 
-        return CollectionManagementResult<CollectionResponse>
-            .Success(response);
+        return CollectionManagementResult<CollectionResponse>.Success(
+            response);
     }
 
     public async Task<CollectionManagementResult<CollectionResponse>>
@@ -100,12 +111,18 @@ public sealed partial class CollectionManagementService
         ArgumentNullException.ThrowIfNull(request);
 
         if ( actorUserId <= 0 ||
-            collectionId <= 0 )
+             collectionId <= 0 )
         {
-            return CollectionManagementResult<CollectionResponse>
-                .Failure(
-                    CollectionManagementErrorCodes.InvalidRequest ,
-                    "The collection update request is invalid.");
+            return CollectionManagementResult<CollectionResponse>.Failure(
+                CollectionManagementErrorCodes.InvalidRequest ,
+                "The collection update request is invalid.");
+        }
+
+        if ( request.SeasonId <= 0 )
+        {
+            return CollectionManagementResult<CollectionResponse>.Failure(
+                CollectionManagementErrorCodes.InvalidRequest ,
+                "A valid season is required.");
         }
 
         if ( !TryNormalizeNames(
@@ -115,28 +132,34 @@ public sealed partial class CollectionManagementService
                 out var nameAr ,
                 out var validationError) )
         {
-            return CollectionManagementResult<CollectionResponse>
-                .Failure(
-                    CollectionManagementErrorCodes.InvalidRequest ,
-                    validationError);
+            return CollectionManagementResult<CollectionResponse>.Failure(
+                CollectionManagementErrorCodes.InvalidRequest ,
+                validationError);
         }
 
         var collection =
             await _dbContext.Collections
-                .AsTracking()
                 .SingleOrDefaultAsync(
-                    existingCollection =>
-                        existingCollection.Id ==
+                    collection =>
+                        collection.Id ==
                         collectionId ,
                     cancellationToken);
 
         if ( collection is null ||
-            collection.IsDeleted )
+             collection.IsDeleted )
         {
-            return CollectionManagementResult<CollectionResponse>
-                .Failure(
-                    CollectionManagementErrorCodes.NotFound ,
-                    "The active collection was not found.");
+            return CollectionManagementResult<CollectionResponse>.Failure(
+                CollectionManagementErrorCodes.NotFound ,
+                "The active collection was not found.");
+        }
+
+        if ( !await SeasonExistsAsync(
+                request.SeasonId ,
+                cancellationToken) )
+        {
+            return CollectionManagementResult<CollectionResponse>.Failure(
+                CollectionManagementErrorCodes.InvalidReference ,
+                "The selected season was not found or has been deleted.");
         }
 
         if ( await HasDuplicateNameAsync(
@@ -145,22 +168,31 @@ public sealed partial class CollectionManagementService
                 collection.Id ,
                 cancellationToken) )
         {
-            return CollectionManagementResult<CollectionResponse>
-                .Failure(
-                    CollectionManagementErrorCodes.DuplicateName ,
-                    "A collection with the same Arabic or English name already exists.");
+            return CollectionManagementResult<CollectionResponse>.Failure(
+                CollectionManagementErrorCodes.DuplicateName ,
+                "A collection with the same Arabic or English name already exists.");
         }
 
-        collection.Name.Update(
-            nameEn ,
-            nameAr);
-
-        collection.LastModifiedOn =
+        var now =
             _timeProvider.GetUtcNow();
 
-        collection.LastModifiedBy =
+        var actor =
             actorUserId.ToString(
                 CultureInfo.InvariantCulture);
+
+        collection.Name =
+            new LocalizedText(
+                nameEn ,
+                nameAr);
+
+        collection.SeasonId =
+            request.SeasonId;
+
+        collection.LastModifiedOn =
+            now;
+
+        collection.LastModifiedBy =
+            actor;
 
         await _dbContext.SaveChangesAsync(
             cancellationToken);
@@ -168,16 +200,12 @@ public sealed partial class CollectionManagementService
         var response =
             await GetResponseByIdAsync(
                 collection.Id ,
-                cancellationToken);
-
-        if ( response is null )
-        {
-            throw new InvalidOperationException(
+                cancellationToken)
+            ?? throw new InvalidOperationException(
                 "The collection was updated but could not be reloaded.");
-        }
 
-        return CollectionManagementResult<CollectionResponse>
-            .Success(response);
+        return CollectionManagementResult<CollectionResponse>.Success(
+            response);
     }
 
     public async Task<CollectionManagementOperationResult>
@@ -187,7 +215,7 @@ public sealed partial class CollectionManagementService
             CancellationToken cancellationToken = default )
     {
         if ( actorUserId <= 0 ||
-            collectionId <= 0 )
+             collectionId <= 0 )
         {
             return CollectionManagementOperationResult.Failure(
                 CollectionManagementErrorCodes.InvalidRequest ,
@@ -196,15 +224,14 @@ public sealed partial class CollectionManagementService
 
         var collection =
             await _dbContext.Collections
-                .AsTracking()
                 .SingleOrDefaultAsync(
-                    existingCollection =>
-                        existingCollection.Id ==
+                    collection =>
+                        collection.Id ==
                         collectionId ,
                     cancellationToken);
 
         if ( collection is null ||
-            collection.IsDeleted )
+             collection.IsDeleted )
         {
             return CollectionManagementOperationResult.Failure(
                 CollectionManagementErrorCodes.NotFound ,
@@ -218,11 +245,20 @@ public sealed partial class CollectionManagementService
             actorUserId.ToString(
                 CultureInfo.InvariantCulture);
 
-        collection.IsDeleted = true;
-        collection.DeletedOn = now;
-        collection.DeletedBy = actor;
-        collection.LastModifiedOn = now;
-        collection.LastModifiedBy = actor;
+        collection.IsDeleted =
+            true;
+
+        collection.DeletedOn =
+            now;
+
+        collection.DeletedBy =
+            actor;
+
+        collection.LastModifiedOn =
+            now;
+
+        collection.LastModifiedBy =
+            actor;
 
         await _dbContext.SaveChangesAsync(
             cancellationToken);
@@ -237,7 +273,7 @@ public sealed partial class CollectionManagementService
             CancellationToken cancellationToken = default )
     {
         if ( actorUserId <= 0 ||
-            collectionId <= 0 )
+             collectionId <= 0 )
         {
             return CollectionManagementOperationResult.Failure(
                 CollectionManagementErrorCodes.InvalidRequest ,
@@ -246,10 +282,9 @@ public sealed partial class CollectionManagementService
 
         var collection =
             await _dbContext.Collections
-                .AsTracking()
                 .SingleOrDefaultAsync(
-                    existingCollection =>
-                        existingCollection.Id ==
+                    collection =>
+                        collection.Id ==
                         collectionId ,
                     cancellationToken);
 
@@ -267,6 +302,15 @@ public sealed partial class CollectionManagementService
                 "The collection is already active.");
         }
 
+        if ( !await SeasonExistsAsync(
+                collection.SeasonId ,
+                cancellationToken) )
+        {
+            return CollectionManagementOperationResult.Failure(
+                CollectionManagementErrorCodes.InvalidReference ,
+                "The collection cannot be restored because its season was not found or has been deleted.");
+        }
+
         if ( await HasDuplicateNameAsync(
                 collection.Name.English ,
                 collection.Name.Arabic ,
@@ -281,13 +325,24 @@ public sealed partial class CollectionManagementService
         var now =
             _timeProvider.GetUtcNow();
 
-        collection.IsDeleted = false;
-        collection.DeletedOn = null;
-        collection.DeletedBy = null;
-        collection.LastModifiedOn = now;
-        collection.LastModifiedBy =
+        var actor =
             actorUserId.ToString(
                 CultureInfo.InvariantCulture);
+
+        collection.IsDeleted =
+            false;
+
+        collection.DeletedOn =
+            null;
+
+        collection.DeletedBy =
+            null;
+
+        collection.LastModifiedOn =
+            now;
+
+        collection.LastModifiedBy =
+            actor;
 
         await _dbContext.SaveChangesAsync(
             cancellationToken);

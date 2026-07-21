@@ -76,6 +76,19 @@ public sealed partial class CollectionManagementService
                 cancellationToken);
     }
 
+    private async Task<bool> SeasonExistsAsync(
+        int seasonId ,
+        CancellationToken cancellationToken )
+    {
+        return await _dbContext.Seasons
+            .AsNoTracking()
+            .AnyAsync(
+                season =>
+                    season.Id == seasonId &&
+                    !season.IsDeleted ,
+                cancellationToken);
+    }
+
     private async Task<CollectionResponse?> GetResponseByIdAsync(
         int collectionId ,
         CancellationToken cancellationToken )
@@ -102,6 +115,12 @@ public sealed partial class CollectionManagementService
                     collection.Name.Arabic ,
                 NameEn =
                     collection.Name.English ,
+                SeasonId =
+                    collection.SeasonId ,
+                SeasonNameAr =
+                    collection.Season.Name.Arabic ,
+                SeasonNameEn =
+                    collection.Season.Name.English ,
                 ProductCount =
                     collection.ProductCollections.Count ,
                 IsDeleted =
