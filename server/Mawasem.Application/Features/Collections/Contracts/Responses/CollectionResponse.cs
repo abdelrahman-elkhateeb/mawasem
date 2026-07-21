@@ -8,6 +8,12 @@ public sealed record CollectionResponse
 
     public string NameEn { get; init; } = string.Empty;
 
+    public int SeasonId { get; init; }
+
+    public string SeasonNameAr { get; init; } = string.Empty;
+
+    public string SeasonNameEn { get; init; } = string.Empty;
+
     public int ProductCount { get; init; }
 
     public bool IsDeleted { get; init; }

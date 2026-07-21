@@ -10,4 +10,7 @@ public static class CollectionManagementErrorCodes
 
     public const string DuplicateName =
         "collections.duplicate_name";
+
+    public const string InvalidReference =
+        "collections.invalid_reference";
 }
