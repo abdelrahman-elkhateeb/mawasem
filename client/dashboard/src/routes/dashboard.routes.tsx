@@ -2,9 +2,9 @@ import AdminLayout from "@/layouts/AdminLayout";
 import DashboardPage from "@/pages/Home/DashboardPage";
 import type { RouteObject } from "react-router-dom";
 import { ProtectedRoute } from "./protected-route";
-import BrandsPage from "@/features/brands/pages/BrandsPage";
 import CategoriesPage from "@/features/categories/pages/CategoriesPage";
 import CollectionsPage from "@/features/collections/pages/CollectionsPage";
+import { BrandsPage } from "@/features/brands/pages/BrandsPage";
 
 export const dashboardRoutes: RouteObject = {
   path: "/",

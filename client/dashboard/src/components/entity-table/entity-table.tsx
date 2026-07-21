@@ -1,8 +1,7 @@
-"use client";
+import type { ColumnDef } from "@tanstack/react-table";
 
 import {
   flexRender,
-  type ColumnDef,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
@@ -16,18 +15,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-interface EntityTableProps<TData> {
-  columns: ColumnDef<TData>[];
+interface EntityTableProps<TData, TValue> {
+  columns: ColumnDef<TData, TValue>[];
   data: TData[];
 }
 
-export function EntityTable<TData>({
+export function EntityTable<TData, TValue>({
   columns,
   data,
-}: EntityTableProps<TData>) {
+}: EntityTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
     columns,
+
     getCoreRowModel: getCoreRowModel(),
   });
 
@@ -71,7 +71,7 @@ export function EntityTable<TData>({
                 colSpan={columns.length}
                 className="h-24 text-center"
               >
-                No results.
+                No results found.
               </TableCell>
             </TableRow>
           )}

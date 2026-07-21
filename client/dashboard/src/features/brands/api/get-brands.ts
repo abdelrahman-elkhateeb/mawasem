@@ -3,20 +3,32 @@ import type { PaginatedResponse } from "../types/pagination";
 import type { Brand } from "../types/brands";
 
 interface GetBrandsParams {
-  page: number;
+  search?: string;
+  isActive?: boolean;
+  includeDeleted?: boolean;
+  pageNumber: number;
   pageSize: number;
 }
 
 export async function getBrands({
-  page, pageSize
+  search,
+  isActive,
+  includeDeleted,
+  pageNumber,
+  pageSize,
 }: GetBrandsParams) {
-  const response = await api.get<PaginatedResponse<Brand>>("/brands",
-    {
+  const response =
+    await api.get<
+      PaginatedResponse<Brand>
+    >("/brands", {
       params: {
-        page,
+        search,
+        isActive,
+        includeDeleted,
+        pageNumber,
         pageSize,
       },
-    })
+    });
 
   return response.data;
 }

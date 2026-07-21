@@ -1,14 +1,30 @@
 import { useQuery } from "@tanstack/react-query";
 import { getBrands } from "../api/get-brands";
 
-export function useBrands(page: number, pageSize: number) {
-  const { data: brands, isPending: isLoading, error } = useQuery({
-    queryKey: ["brands", page, pageSize],
-    queryFn: () => getBrands({
-      page,
-      pageSize
-    })
-  })
+interface UseBrandsParams {
+  search?: string;
+  isActive?: boolean;
+  includeDeleted?: boolean;
+  pageNumber: number;
+  pageSize: number;
+}
 
-  return { brands, isLoading, error }
+export function useBrands(
+  params: UseBrandsParams
+) {
+  const {
+    data,
+    isPending: isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["brands", params],
+
+    queryFn: () => getBrands(params),
+  });
+
+  return {
+    data,
+    isLoading,
+    error,
+  };
 }
