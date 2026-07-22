@@ -28,6 +28,12 @@ public sealed record ProductDetailsResponse
     public IReadOnlyList<ProductReferenceResponse> Collections { get; init; } =
         Array.Empty<ProductReferenceResponse>();
 
+    public IReadOnlyCollection<ProductReferenceResponse> Grades { get; init; } =
+        Array.Empty<ProductReferenceResponse>();
+
+    public IReadOnlyCollection<ProductReferenceResponse> Tags { get; init; } =
+        Array.Empty<ProductReferenceResponse>();
+
     public IReadOnlyList<ProductSpecificationResponse> Specifications { get; init; } =
         Array.Empty<ProductSpecificationResponse>();
 

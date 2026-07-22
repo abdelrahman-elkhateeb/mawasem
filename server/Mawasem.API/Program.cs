@@ -1,5 +1,6 @@
 using Mawasem.API.Authentication;
 using Mawasem.API.Authorization;
+using Mawasem.API.BackgroundServices;
 using Mawasem.Application.Features.Authentication.Interfaces;
 using Mawasem.Application.Features.Authentication.Models;
 using Mawasem.Application.Features.Authentication.Options;
@@ -395,6 +396,12 @@ builder.Services.Configure<ProductImageStorageOptions>(
 builder.Services.AddSingleton<
     IProductImageStorage ,
     LocalProductImageStorage>();
+
+builder.Services.AddScoped<
+    PendingProductImageDeletionProcessor>();
+
+builder.Services.AddHostedService<
+    PendingProductImageDeletionWorker>();
 
 var app = builder.Build();
 

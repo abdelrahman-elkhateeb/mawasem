@@ -655,6 +655,11 @@ public sealed class ProductImageManagementService
         var now =
             _timeProvider.GetUtcNow();
 
+        var pendingDeletion =
+            new PendingProductImageDeletion(
+                storageKey ,
+                now);
+
         var actorId =
             actorUserId.ToString(
                 CultureInfo.InvariantCulture);
@@ -676,6 +681,10 @@ public sealed class ProductImageManagementService
                 await _dbContext.Database
                     .BeginTransactionAsync(
                         cancellationToken);
+
+            _dbContext
+                .Set<PendingProductImageDeletion>()
+                .Add(pendingDeletion);
 
             _dbContext
                 .Set<ProductImage>()
@@ -741,6 +750,10 @@ public sealed class ProductImageManagementService
         else
         {
             _dbContext
+                .Set<PendingProductImageDeletion>()
+                .Add(pendingDeletion);
+
+            _dbContext
                 .Set<ProductImage>()
                 .Remove(targetImage);
 
@@ -776,10 +789,6 @@ public sealed class ProductImageManagementService
             await _dbContext.SaveChangesAsync(
                 cancellationToken);
         }
-
-        await _imageStorage.DeleteAsync(
-            storageKey ,
-            CancellationToken.None);
 
         return ProductManagementResult<bool>
             .Success(true);

@@ -74,6 +74,8 @@ public sealed partial class ProductManagementService
         int seasonId ,
         IReadOnlyCollection<int> categoryIds ,
         IReadOnlyCollection<int> collectionIds ,
+        IReadOnlyCollection<int> gradeIds ,
+        IReadOnlyCollection<int> tagIds ,
         IReadOnlyCollection<ProductSpecificationRequest> specifications )
     {
         if ( string.IsNullOrWhiteSpace(nameAr) )
@@ -188,6 +190,38 @@ public sealed partial class ProductManagementService
             return "A collection cannot be selected more than once.";
         }
 
+        if ( gradeIds is null )
+        {
+            return "Grades are required.";
+        }
+
+        if ( gradeIds.Any(x => x <= 0) )
+        {
+            return "Select valid grades.";
+        }
+
+        if ( gradeIds.Count !=
+            gradeIds.Distinct().Count() )
+        {
+            return "A grade cannot be selected more than once.";
+        }
+
+        if ( tagIds is null )
+        {
+            return "Tags are required.";
+        }
+
+        if ( tagIds.Any(x => x <= 0) )
+        {
+            return "Select valid tags.";
+        }
+
+        if ( tagIds.Count !=
+            tagIds.Distinct().Count() )
+        {
+            return "A tag cannot be selected more than once.";
+        }
+
         if ( specifications is null )
         {
             return "Specifications are required.";
@@ -270,6 +304,8 @@ public sealed partial class ProductManagementService
         int seasonId ,
         IReadOnlyCollection<int> categoryIds ,
         IReadOnlyCollection<int> collectionIds ,
+        IReadOnlyCollection<int> gradeIds ,
+        IReadOnlyCollection<int> tagIds ,
         CancellationToken cancellationToken )
     {
         var brandExists =
@@ -325,24 +361,68 @@ public sealed partial class ProductManagementService
                 .Distinct()
                 .ToArray();
 
-        if ( collectionIdArray.Length == 0 )
+        if ( collectionIdArray.Length > 0 )
         {
-            return null;
+            var collectionCount =
+                await _dbContext.Collections
+                    .AsNoTracking()
+                    .CountAsync(
+                        x =>
+                            collectionIdArray.Contains(x.Id) &&
+                            !x.IsDeleted ,
+                        cancellationToken);
+
+            if ( collectionCount != collectionIdArray.Length )
+            {
+                return
+                    "One or more selected collections were not found.";
+            }
         }
 
-        var collectionCount =
-            await _dbContext.Collections
-                .AsNoTracking()
-                .CountAsync(
-                    x =>
-                        collectionIdArray.Contains(x.Id) &&
-                        !x.IsDeleted ,
-                    cancellationToken);
+        var gradeIdArray =
+            gradeIds
+                .Distinct()
+                .ToArray();
 
-        if ( collectionCount != collectionIdArray.Length )
+        if ( gradeIdArray.Length > 0 )
         {
-            return
-                "One or more selected collections were not found.";
+            var gradeCount =
+                await _dbContext.Grades
+                    .AsNoTracking()
+                    .CountAsync(
+                        x =>
+                            gradeIdArray.Contains(x.Id) &&
+                            !x.IsDeleted ,
+                        cancellationToken);
+
+            if ( gradeCount != gradeIdArray.Length )
+            {
+                return
+                    "One or more selected grades were not found.";
+            }
+        }
+
+        var tagIdArray =
+            tagIds
+                .Distinct()
+                .ToArray();
+
+        if ( tagIdArray.Length > 0 )
+        {
+            var tagCount =
+                await _dbContext.Tags
+                    .AsNoTracking()
+                    .CountAsync(
+                        x =>
+                            tagIdArray.Contains(x.Id) &&
+                            !x.IsDeleted ,
+                        cancellationToken);
+
+            if ( tagCount != tagIdArray.Length )
+            {
+                return
+                    "One or more selected tags were not found.";
+            }
         }
 
         return null;
