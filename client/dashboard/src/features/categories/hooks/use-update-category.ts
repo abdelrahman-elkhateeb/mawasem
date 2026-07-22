@@ -4,7 +4,12 @@ import { updateCategory } from "../api/update-category";
 export function useUpdateCategory() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  const {
+    mutate: updateCategoryMutation,
+    mutateAsync: updateCategoryMutationAsync,
+    isPending: isLoading,
+    error,
+  } = useMutation({
     mutationFn: updateCategory,
 
     onSuccess: () => {
@@ -13,4 +18,11 @@ export function useUpdateCategory() {
       });
     },
   });
+
+  return {
+    updateCategoryMutation,
+    updateCategoryMutationAsync,
+    isLoading,
+    error,
+  };
 }

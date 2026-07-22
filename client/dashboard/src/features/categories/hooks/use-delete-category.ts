@@ -4,7 +4,12 @@ import { deleteCategory } from "../api/delete-category";
 export function useDeleteCategory() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  const {
+    mutate: deleteCategoryMutation,
+    mutateAsync: deleteCategoryMutationAsync,
+    isPending: isLoading,
+    error,
+  } = useMutation({
     mutationFn: deleteCategory,
 
     onSuccess: () => {
@@ -13,4 +18,11 @@ export function useDeleteCategory() {
       });
     },
   });
+
+  return {
+    deleteCategoryMutation,
+    deleteCategoryMutationAsync,
+    isLoading,
+    error,
+  };
 }

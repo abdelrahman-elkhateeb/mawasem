@@ -4,7 +4,12 @@ import { restoreCategory } from "../api/restore-category";
 export function useRestoreCategory() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  const {
+    mutate: restoreCategoryMutation,
+    mutateAsync: restoreCategoryMutationAsync,
+    isPending: isLoading,
+    error,
+  } = useMutation({
     mutationFn: restoreCategory,
 
     onSuccess: () => {
@@ -13,4 +18,11 @@ export function useRestoreCategory() {
       });
     },
   });
+
+  return {
+    restoreCategoryMutation,
+    restoreCategoryMutationAsync,
+    isLoading,
+    error,
+  };
 }

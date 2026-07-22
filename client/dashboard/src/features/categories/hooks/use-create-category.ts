@@ -4,7 +4,12 @@ import { createCategory } from "../api/create-category";
 export function useCreateCategory() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  const {
+    mutate: createCategoryMutation,
+    mutateAsync: createCategoryMutationAsync,
+    isPending: isLoading,
+    error,
+  } = useMutation({
     mutationFn: createCategory,
 
     onSuccess: () => {
@@ -13,4 +18,11 @@ export function useCreateCategory() {
       });
     },
   });
+
+  return {
+    createCategoryMutation,
+    createCategoryMutationAsync,
+    isLoading,
+    error,
+  };
 }
