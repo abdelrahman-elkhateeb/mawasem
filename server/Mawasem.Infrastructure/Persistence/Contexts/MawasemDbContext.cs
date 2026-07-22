@@ -1,4 +1,5 @@
-﻿using Mawasem.Domain.Catalog;
+﻿using Mawasem.Domain.Carts;
+using Mawasem.Domain.Catalog;
 using Mawasem.Domain.Delivery;
 using Mawasem.Domain.Identity;
 using Mawasem.Domain.Orders;
@@ -59,6 +60,16 @@ public class MawasemDbContext
 
     public DbSet<ProductGrade> ProductGrades =>
         Set<ProductGrade>();
+
+    #endregion
+
+    #region Carts
+
+    public DbSet<Cart> Carts =>
+        Set<Cart>();
+
+    public DbSet<CartItem> CartItems =>
+        Set<CartItem>();
 
     #endregion
 

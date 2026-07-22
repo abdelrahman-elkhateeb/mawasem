@@ -5,6 +5,7 @@ using Mawasem.Application.Features.Authentication.Interfaces;
 using Mawasem.Application.Features.Authentication.Models;
 using Mawasem.Application.Features.Authentication.Options;
 using Mawasem.Application.Features.Brands.Interfaces;
+using Mawasem.Application.Features.Carts.Interfaces;
 using Mawasem.Application.Features.Categories.Interfaces;
 using Mawasem.Application.Features.Collections.Interfaces;
 using Mawasem.Application.Features.Customers.Interfaces;
@@ -16,6 +17,7 @@ using Mawasem.Application.Features.Seasons.Interfaces;
 using Mawasem.Domain.Identity;
 using Mawasem.Infrastructure.Authentication;
 using Mawasem.Infrastructure.Brands;
+using Mawasem.Infrastructure.Carts;
 using Mawasem.Infrastructure.Categories;
 using Mawasem.Infrastructure.Collections;
 using Mawasem.Infrastructure.Customers;
@@ -402,6 +404,9 @@ builder.Services.AddScoped<
 
 builder.Services.AddHostedService<
     PendingProductImageDeletionWorker>();
+
+builder.Services.AddScoped<
+    ICartService , CartService>();
 
 var app = builder.Build();
 
