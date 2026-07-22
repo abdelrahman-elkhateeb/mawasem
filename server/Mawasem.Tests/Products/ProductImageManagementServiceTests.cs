@@ -347,12 +347,28 @@ public sealed class ProductImageManagementServiceTests
                         x.Id ==
                         thirdResult.Response.Id));
 
+        var pendingDeletion =
+            await dbContext
+                .Set<PendingProductImageDeletion>()
+                .AsNoTracking()
+                .SingleAsync();
+
         Assert.Equal(
-            new[]
-            {
-                storedThirdImage.StorageKey
-            } ,
-            storage.DeletedStorageKeys);
+            storedThirdImage.StorageKey ,
+            pendingDeletion.StorageKey);
+
+        Assert.Equal(
+            timeProvider.GetUtcNow() ,
+            pendingDeletion.CreatedAt);
+
+        Assert.Equal(
+            timeProvider.GetUtcNow() ,
+            pendingDeletion.NextAttemptAt);
+
+        Assert.Equal(0 , pendingDeletion.AttemptCount);
+        Assert.Null(pendingDeletion.LastAttemptAt);
+        Assert.Null(pendingDeletion.LastError);
+        Assert.Empty(storage.DeletedStorageKeys);
     }
 
     [Fact]

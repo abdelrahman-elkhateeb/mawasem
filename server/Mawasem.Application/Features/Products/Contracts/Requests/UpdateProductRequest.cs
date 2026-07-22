@@ -26,6 +26,12 @@ public sealed record UpdateProductRequest
     public IReadOnlyCollection<int> CollectionIds { get; init; } =
         Array.Empty<int>();
 
+    public IReadOnlyCollection<int> GradeIds { get; init; } =
+        Array.Empty<int>();
+
+    public IReadOnlyCollection<int> TagIds { get; init; } =
+        Array.Empty<int>();
+
     public IReadOnlyCollection<ProductSpecificationRequest> Specifications { get; init; } =
         Array.Empty<ProductSpecificationRequest>();
 }

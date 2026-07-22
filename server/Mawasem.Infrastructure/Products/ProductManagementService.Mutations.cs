@@ -36,6 +36,8 @@ public sealed partial class ProductManagementService
                 request.SeasonId ,
                 request.CategoryIds ,
                 request.CollectionIds ,
+                request.GradeIds ,
+                request.TagIds ,
                 request.Specifications);
 
         if ( validationError is not null )
@@ -68,6 +70,8 @@ public sealed partial class ProductManagementService
                 request.SeasonId ,
                 request.CategoryIds ,
                 request.CollectionIds ,
+                request.GradeIds ,
+                request.TagIds ,
                 cancellationToken);
 
         if ( referenceError is not null )
@@ -128,6 +132,26 @@ public sealed partial class ProductManagementService
                 {
                     Product = product ,
                     CollectionId = collectionId
+                });
+        }
+
+        foreach ( var gradeId in request.GradeIds )
+        {
+            product.ProductGrades.Add(
+                new ProductGrade
+                {
+                    Product = product ,
+                    GradeId = gradeId
+                });
+        }
+
+        foreach ( var tagId in request.TagIds )
+        {
+            product.ProductTags.Add(
+                new ProductTag
+                {
+                    Product = product ,
+                    TagId = tagId
                 });
         }
 
@@ -192,6 +216,8 @@ public sealed partial class ProductManagementService
                 request.SeasonId ,
                 request.CategoryIds ,
                 request.CollectionIds ,
+                request.GradeIds ,
+                request.TagIds ,
                 request.Specifications);
 
         if ( validationError is not null )
@@ -205,6 +231,8 @@ public sealed partial class ProductManagementService
             await _dbContext.Products
                 .Include(x => x.ProductCategories)
                 .Include(x => x.ProductCollections)
+                .Include(x => x.ProductGrades)
+                .Include(x => x.ProductTags)
                 .Include(x => x.Specifications)
                 .SingleOrDefaultAsync(
                     x =>
@@ -244,6 +272,8 @@ public sealed partial class ProductManagementService
                 request.SeasonId ,
                 request.CategoryIds ,
                 request.CollectionIds ,
+                request.GradeIds ,
+                request.TagIds ,
                 cancellationToken);
 
         if ( referenceError is not null )
@@ -360,6 +390,76 @@ public sealed partial class ProductManagementService
                 {
                     ProductId = product.Id ,
                     CollectionId = collectionId
+                });
+        }
+
+        var requestedGradeIds =
+            request.GradeIds
+                .ToHashSet();
+
+        var removedProductGrades =
+            product.ProductGrades
+                .Where(
+                    x =>
+                        !requestedGradeIds.Contains(
+                            x.GradeId))
+                .ToList();
+
+        _dbContext.ProductGrades.RemoveRange(
+            removedProductGrades);
+
+        var existingGradeIds =
+            product.ProductGrades
+                .Select(x => x.GradeId)
+                .ToHashSet();
+
+        foreach ( var gradeId in requestedGradeIds )
+        {
+            if ( existingGradeIds.Contains(gradeId) )
+            {
+                continue;
+            }
+
+            product.ProductGrades.Add(
+                new ProductGrade
+                {
+                    ProductId = product.Id ,
+                    GradeId = gradeId
+                });
+        }
+
+        var requestedTagIds =
+            request.TagIds
+                .ToHashSet();
+
+        var removedProductTags =
+            product.ProductTags
+                .Where(
+                    x =>
+                        !requestedTagIds.Contains(
+                            x.TagId))
+                .ToList();
+
+        _dbContext.ProductTags.RemoveRange(
+            removedProductTags);
+
+        var existingTagIds =
+            product.ProductTags
+                .Select(x => x.TagId)
+                .ToHashSet();
+
+        foreach ( var tagId in requestedTagIds )
+        {
+            if ( existingTagIds.Contains(tagId) )
+            {
+                continue;
+            }
+
+            product.ProductTags.Add(
+                new ProductTag
+                {
+                    ProductId = product.Id ,
+                    TagId = tagId
                 });
         }
 

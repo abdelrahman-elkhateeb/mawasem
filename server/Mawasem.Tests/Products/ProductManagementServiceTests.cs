@@ -36,6 +36,10 @@ public sealed class ProductManagementServiceTests
             scope.ServiceProvider
                 .GetRequiredService<ProductManagementService>();
 
+        var dbContext =
+            scope.ServiceProvider
+                .GetRequiredService<MawasemDbContext>();
+
         var references =
             await SeedReferencesAsync(
                 scope.ServiceProvider ,
@@ -64,6 +68,16 @@ public sealed class ProductManagementServiceTests
                         new[]
                         {
                             references.CollectionId
+                        } ,
+                    GradeIds =
+                        new[]
+                        {
+                            references.FirstGradeId
+                        } ,
+                    TagIds =
+                        new[]
+                        {
+                            references.FirstTagId
                         } ,
                     Specifications =
                         new[]
@@ -144,6 +158,16 @@ public sealed class ProductManagementServiceTests
             Assert.Single(
                 createdProduct.Collections).Id);
 
+        Assert.Equal(
+            references.FirstGradeId ,
+            Assert.Single(
+                createdProduct.Grades).Id);
+
+        Assert.Equal(
+            references.FirstTagId ,
+            Assert.Single(
+                createdProduct.Tags).Id);
+
         var createdSpecification =
             Assert.Single(
                 createdProduct.Specifications);
@@ -223,6 +247,16 @@ public sealed class ProductManagementServiceTests
                         } ,
                     CollectionIds =
                         Array.Empty<int>() ,
+                    GradeIds =
+                        new[]
+                        {
+                            references.SecondGradeId
+                        } ,
+                    TagIds =
+                        new[]
+                        {
+                            references.SecondTagId
+                        } ,
                     Specifications =
                         new[]
                         {
@@ -270,6 +304,42 @@ public sealed class ProductManagementServiceTests
         Assert.Empty(
             updatedProduct.Collections);
 
+        Assert.Equal(
+            references.SecondGradeId ,
+            Assert.Single(
+                updatedProduct.Grades).Id);
+
+        Assert.Equal(
+            references.SecondTagId ,
+            Assert.Single(
+                updatedProduct.Tags).Id);
+
+        var persistedGradeId =
+            await dbContext.ProductGrades
+                .Where(
+                    x =>
+                        x.ProductId ==
+                        updatedProduct.Id)
+                .Select(x => x.GradeId)
+                .SingleAsync();
+
+        Assert.Equal(
+            references.SecondGradeId ,
+            persistedGradeId);
+
+        var persistedTagId =
+            await dbContext.ProductTags
+                .Where(
+                    x =>
+                        x.ProductId ==
+                        updatedProduct.Id)
+                .Select(x => x.TagId)
+                .SingleAsync();
+
+        Assert.Equal(
+            references.SecondTagId ,
+            persistedTagId);
+
         var updatedSpecification =
             Assert.Single(
                 updatedProduct.Specifications);
@@ -289,6 +359,225 @@ public sealed class ProductManagementServiceTests
         Assert.Equal(
             timeProvider.GetUtcNow() ,
             updatedProduct.LastModifiedOn);
+    }
+
+    [Fact]
+    public async Task CreateAsync_RejectsInvalidDuplicateMissingAndDeletedGradeOrTagReferences()
+    {
+        var timeProvider =
+            new TestTimeProvider(
+                new DateTimeOffset(
+                    2026 ,
+                    7 ,
+                    19 ,
+                    11 ,
+                    30 ,
+                    0 ,
+                    TimeSpan.Zero));
+
+        await using var provider =
+            CreateServiceProvider(
+                timeProvider);
+
+        await using var scope =
+            provider.CreateAsyncScope();
+
+        var service =
+            scope.ServiceProvider
+                .GetRequiredService<ProductManagementService>();
+
+        var dbContext =
+            scope.ServiceProvider
+                .GetRequiredService<MawasemDbContext>();
+
+        var references =
+            await SeedReferencesAsync(
+                scope.ServiceProvider ,
+                timeProvider.GetUtcNow());
+
+        var validRequest =
+            CreateReferenceValidationRequest(
+                references);
+
+        var invalidGradeResult =
+            await service.CreateAsync(
+                actorUserId: 1 ,
+                validRequest with
+                {
+                    GradeIds =
+                        new[]
+                        {
+                            0
+                        }
+                });
+
+        Assert.False(
+            invalidGradeResult.Succeeded);
+
+        Assert.Equal(
+            ProductManagementErrorCodes.InvalidRequest ,
+            invalidGradeResult.ErrorCode);
+
+        var invalidTagResult =
+            await service.CreateAsync(
+                actorUserId: 1 ,
+                validRequest with
+                {
+                    TagIds =
+                        new[]
+                        {
+                            0
+                        }
+                });
+
+        Assert.False(
+            invalidTagResult.Succeeded);
+
+        Assert.Equal(
+            ProductManagementErrorCodes.InvalidRequest ,
+            invalidTagResult.ErrorCode);
+
+        var duplicateGradeResult =
+            await service.CreateAsync(
+                actorUserId: 1 ,
+                validRequest with
+                {
+                    GradeIds =
+                        new[]
+                        {
+                            references.FirstGradeId ,
+                            references.FirstGradeId
+                        }
+                });
+
+        Assert.False(
+            duplicateGradeResult.Succeeded);
+
+        Assert.Equal(
+            ProductManagementErrorCodes.InvalidRequest ,
+            duplicateGradeResult.ErrorCode);
+
+        var duplicateTagResult =
+            await service.CreateAsync(
+                actorUserId: 1 ,
+                validRequest with
+                {
+                    TagIds =
+                        new[]
+                        {
+                            references.FirstTagId ,
+                            references.FirstTagId
+                        }
+                });
+
+        Assert.False(
+            duplicateTagResult.Succeeded);
+
+        Assert.Equal(
+            ProductManagementErrorCodes.InvalidRequest ,
+            duplicateTagResult.ErrorCode);
+
+        var missingGradeResult =
+            await service.CreateAsync(
+                actorUserId: 1 ,
+                validRequest with
+                {
+                    GradeIds =
+                        new[]
+                        {
+                            int.MaxValue
+                        }
+                });
+
+        Assert.False(
+            missingGradeResult.Succeeded);
+
+        Assert.Equal(
+            ProductManagementErrorCodes.InvalidReference ,
+            missingGradeResult.ErrorCode);
+
+        var missingTagResult =
+            await service.CreateAsync(
+                actorUserId: 1 ,
+                validRequest with
+                {
+                    TagIds =
+                        new[]
+                        {
+                            int.MaxValue
+                        }
+                });
+
+        Assert.False(
+            missingTagResult.Succeeded);
+
+        Assert.Equal(
+            ProductManagementErrorCodes.InvalidReference ,
+            missingTagResult.ErrorCode);
+
+        var deletedGrade =
+            await dbContext.Grades
+                .SingleAsync(
+                    x =>
+                        x.Id ==
+                        references.SecondGradeId);
+
+        deletedGrade.IsDeleted = true;
+        deletedGrade.DeletedOn =
+            timeProvider.GetUtcNow();
+        deletedGrade.DeletedBy = "seed";
+
+        var deletedTag =
+            await dbContext.Tags
+                .SingleAsync(
+                    x =>
+                        x.Id ==
+                        references.SecondTagId);
+
+        deletedTag.IsDeleted = true;
+        deletedTag.DeletedOn =
+            timeProvider.GetUtcNow();
+        deletedTag.DeletedBy = "seed";
+
+        await dbContext.SaveChangesAsync();
+
+        var deletedGradeResult =
+            await service.CreateAsync(
+                actorUserId: 1 ,
+                validRequest with
+                {
+                    GradeIds =
+                        new[]
+                        {
+                            references.SecondGradeId
+                        }
+                });
+
+        Assert.False(
+            deletedGradeResult.Succeeded);
+
+        Assert.Equal(
+            ProductManagementErrorCodes.InvalidReference ,
+            deletedGradeResult.ErrorCode);
+
+        var deletedTagResult =
+            await service.CreateAsync(
+                actorUserId: 1 ,
+                validRequest with
+                {
+                    TagIds =
+                        new[]
+                        {
+                            references.SecondTagId
+                        }
+                });
+
+        Assert.False(
+            deletedTagResult.Succeeded);
+
+        Assert.Equal(
+            ProductManagementErrorCodes.InvalidReference ,
+            deletedTagResult.ErrorCode);
     }
 
     [Fact]
@@ -796,6 +1085,43 @@ public sealed class ProductManagementServiceTests
             });
     }
 
+    private static CreateProductRequest CreateReferenceValidationRequest(
+        TestReferences references )
+    {
+        return
+            new CreateProductRequest
+            {
+                NameAr = "منتج اختبار المراجع" ,
+                NameEn = "Reference Validation Product" ,
+                DescriptionAr = "وصف عربي" ,
+                DescriptionEn = "English description" ,
+                OriginalPrice = 300m ,
+                CurrentPrice = 250m ,
+                Slug = "reference-validation-product" ,
+                BrandId = references.BrandId ,
+                SeasonId = references.SeasonId ,
+                CategoryIds =
+                    new[]
+                    {
+                        references.FirstCategoryId
+                    } ,
+                CollectionIds =
+                    Array.Empty<int>() ,
+                GradeIds =
+                    new[]
+                    {
+                        references.FirstGradeId
+                    } ,
+                TagIds =
+                    new[]
+                    {
+                        references.FirstTagId
+                    } ,
+                Specifications =
+                    Array.Empty<ProductSpecificationRequest>()
+            };
+    }
+
     private static async Task<TestReferences> SeedReferencesAsync(
         IServiceProvider serviceProvider ,
         DateTimeOffset now )
@@ -876,12 +1202,66 @@ public sealed class ProductManagementServiceTests
                 CreatedBy = "seed"
             };
 
+        var firstGrade =
+            new Grade
+            {
+                Name =
+                    new LocalizedText(
+                        "Grade One" ,
+                        "الصف الأول") ,
+
+                CreatedOn = now ,
+                CreatedBy = "seed"
+            };
+
+        var secondGrade =
+            new Grade
+            {
+                Name =
+                    new LocalizedText(
+                        "Grade Two" ,
+                        "الصف الثاني") ,
+
+                CreatedOn = now ,
+                CreatedBy = "seed"
+            };
+
+        var firstTag =
+            new Tag
+            {
+                Name =
+                    new LocalizedText(
+                        "New" ,
+                        "جديد") ,
+
+                CreatedOn = now ,
+                CreatedBy = "seed"
+            };
+
+        var secondTag =
+            new Tag
+            {
+                Name =
+                    new LocalizedText(
+                        "Gift" ,
+                        "هدية") ,
+
+                CreatedOn = now ,
+                CreatedBy = "seed"
+            };
+
         dbContext.Brands.Add(brand);
         dbContext.Seasons.Add(season);
         dbContext.Categories.AddRange(
             firstCategory ,
             secondCategory);
         dbContext.Collections.Add(collection);
+        dbContext.Grades.AddRange(
+            firstGrade ,
+            secondGrade);
+        dbContext.Tags.AddRange(
+            firstTag ,
+            secondTag);
 
         await dbContext.SaveChangesAsync();
 
@@ -890,7 +1270,11 @@ public sealed class ProductManagementServiceTests
             season.Id ,
             firstCategory.Id ,
             secondCategory.Id ,
-            collection.Id);
+            collection.Id ,
+            firstGrade.Id ,
+            secondGrade.Id ,
+            firstTag.Id ,
+            secondTag.Id);
     }
 
     private static ServiceProvider CreateServiceProvider(
@@ -921,7 +1305,11 @@ public sealed class ProductManagementServiceTests
         int SeasonId ,
         int FirstCategoryId ,
         int SecondCategoryId ,
-        int CollectionId );
+        int CollectionId ,
+        int FirstGradeId ,
+        int SecondGradeId ,
+        int FirstTagId ,
+        int SecondTagId );
 
     private sealed class TestTimeProvider : TimeProvider
     {

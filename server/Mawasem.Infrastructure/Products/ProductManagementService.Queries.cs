@@ -325,6 +325,78 @@ public sealed partial class ProductManagementService
                                             })
                                     .ToList() ,
 
+                            Grades =
+                                x.ProductGrades
+                                    .Where(
+                                        productGrade =>
+                                            !productGrade
+                                                .Grade
+                                                .IsDeleted)
+                                    .OrderBy(
+                                        productGrade =>
+                                            productGrade
+                                                .Grade
+                                                .Name
+                                                .English)
+                                    .Select(
+                                        productGrade =>
+                                            new ProductReferenceResponse
+                                            {
+                                                Id =
+                                                    productGrade
+                                                        .Grade
+                                                        .Id ,
+
+                                                NameAr =
+                                                    productGrade
+                                                        .Grade
+                                                        .Name
+                                                        .Arabic ,
+
+                                                NameEn =
+                                                    productGrade
+                                                        .Grade
+                                                        .Name
+                                                        .English
+                                            })
+                                    .ToList() ,
+
+                            Tags =
+                                x.ProductTags
+                                    .Where(
+                                        productTag =>
+                                            !productTag
+                                                .Tag
+                                                .IsDeleted)
+                                    .OrderBy(
+                                        productTag =>
+                                            productTag
+                                                .Tag
+                                                .Name
+                                                .English)
+                                    .Select(
+                                        productTag =>
+                                            new ProductReferenceResponse
+                                            {
+                                                Id =
+                                                    productTag
+                                                        .Tag
+                                                        .Id ,
+
+                                                NameAr =
+                                                    productTag
+                                                        .Tag
+                                                        .Name
+                                                        .Arabic ,
+
+                                                NameEn =
+                                                    productTag
+                                                        .Tag
+                                                        .Name
+                                                        .English
+                                            })
+                                    .ToList() ,
+
                             Specifications =
                                 x.Specifications
                                     .Where(
