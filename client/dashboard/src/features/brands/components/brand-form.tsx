@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -14,8 +13,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateBrand } from "../hooks/use-create-brand";
-import { useUpdateBrand } from "../hooks/use-update-brand";
 import {
   brandFormDefaultValues,
   brandFormSchema,
@@ -26,12 +23,10 @@ import type { BrandFormProps } from "./types";
 export function BrandForm({
   mode,
   brand,
-  onSuccess,
-  onCancel,
+  formId,
+  onSubmit,
+  errorMessage,
 }: BrandFormProps) {
-  const createBrandMutation = useCreateBrand();
-  const updateBrandMutation = useUpdateBrand();
-
   const form = useForm<BrandFormValues>({
     resolver: zodResolver(brandFormSchema),
     defaultValues:
@@ -64,52 +59,17 @@ export function BrandForm({
     form.reset(brandFormDefaultValues);
   }, [brand, form, mode]);
 
-  const isSubmitting =
-    createBrandMutation.isPending ||
-    updateBrandMutation.isPending;
-
-  const submitLabel =
-    mode === "edit"
-      ? "Save changes"
-      : "Create brand";
-
-  const submitPendingLabel =
-    mode === "edit"
-      ? "Saving..."
-      : "Creating...";
-
-  const mutationError =
-    createBrandMutation.error ??
-    updateBrandMutation.error;
-
-  const errorMessage =
-    mutationError instanceof Error
-      ? mutationError.message
-      : null;
-
-  const handleSubmit = async (
+  const handleFormSubmit = async (
     values: BrandFormValues
   ) => {
-    try {
-      if (mode === "edit" && brand) {
-        await updateBrandMutation.mutateAsync({
-          id: brand.id,
-          data: values,
-        });
-      } else {
-        await createBrandMutation.mutateAsync(values);
-      }
-
-      onSuccess();
-    } catch {
-      // Keep dialog open and show mutation error.
-    }
+    await onSubmit(values);
   };
 
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(handleSubmit)}
+        id={formId}
+        onSubmit={form.handleSubmit(handleFormSubmit)}
         className="space-y-5"
       >
         <div className="grid gap-4 md:grid-cols-2">
@@ -218,23 +178,6 @@ export function BrandForm({
         {errorMessage ? (
           <p className="text-sm text-destructive">{errorMessage}</p>
         ) : null}
-
-        <div className="flex justify-end gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting
-              ? submitPendingLabel
-              : submitLabel}
-          </Button>
-        </div>
       </form>
     </Form>
   );

@@ -1,4 +1,5 @@
 import type { Brand } from "../types/brand";
+import type { BrandFormValues } from "../schema/brand-form-schema";
 
 export type BrandDialogMode =
   | "create"
@@ -14,8 +15,11 @@ export interface BrandDialogProps {
 export interface BrandFormProps {
   mode: BrandDialogMode;
   brand?: Brand;
-  onSuccess: () => void;
-  onCancel: () => void;
+  formId: string;
+  errorMessage?: string | null;
+  onSubmit: (
+    values: BrandFormValues
+  ) => Promise<void>;
 }
 
 export interface BrandActionsProps {

@@ -4,6 +4,8 @@ import { useDebounce } from "use-debounce";
 import { EntityTable } from "@/components/entity-table/entity-table";
 import { EntityToolbar } from "@/components/entity-table/entity-toolbar";
 import { EntityPagination } from "@/components/entity-table/entity-pagination";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { normalizeArabic } from "@/lib/normalize-arabic";
 
 import { useBrands } from "../hooks/use-brands";
@@ -24,6 +26,8 @@ export function BrandsPage() {
 
   const [requestedPageNumber, setRequestedPageNumber] =
     useState(1);
+  const [includeDeleted, setIncludeDeleted] =
+    useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] =
     useState(false);
 
@@ -35,6 +39,7 @@ export function BrandsPage() {
       debouncedSearch.length > 0
         ? debouncedSearch
         : undefined,
+    includeDeleted,
     pageNumber: requestedPageNumber,
     pageSize: 10,
   });
@@ -64,6 +69,13 @@ export function BrandsPage() {
     setRequestedPageNumber(nextPage);
   };
 
+  const handleIncludeDeletedChange = (
+    value: boolean
+  ) => {
+    setIncludeDeleted(value);
+    setRequestedPageNumber(1);
+  };
+
   const handleAddBrand = () => {
     setIsCreateDialogOpen(true);
   };
@@ -86,6 +98,20 @@ export function BrandsPage() {
         buttonText="Add Brand"
         onAdd={handleAddBrand}
       />
+
+      <div className="flex items-center gap-2">
+        <Switch
+          id="include-deleted-brands"
+          checked={includeDeleted}
+          onCheckedChange={
+            handleIncludeDeletedChange
+          }
+        />
+
+        <Label htmlFor="include-deleted-brands">
+          Include deleted
+        </Label>
+      </div>
 
       <EntityTable
         columns={brandColumns}

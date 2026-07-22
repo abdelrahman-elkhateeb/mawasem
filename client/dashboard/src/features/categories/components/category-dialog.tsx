@@ -1,40 +1,40 @@
 import { EntityDialog } from "@/components/entity-dialog/entity-dialog";
 import { EntityDialogFooter } from "@/components/entity-dialog/entity-dialog-footer";
 
-import { useCreateBrand } from "../hooks/use-create-brand";
-import { useUpdateBrand } from "../hooks/use-update-brand";
-import type { BrandFormValues } from "../schema/brand-form-schema";
-import { BrandForm } from "./brand-form";
-import type { BrandDialogProps } from "./types";
+import { useCreateCategory } from "../hooks/use-create-category";
+import { useUpdateCategory } from "../hooks/use-update-category";
+import type { CategoryFormValues } from "../schema/category-form-schema";
+import { CategoryForm } from "./category-form";
+import type { CategoryDialogProps } from "./types";
 
-export function BrandDialog({
+export function CategoryDialog({
   open,
   onOpenChange,
   mode,
-  brand,
-}: BrandDialogProps) {
-  const createBrandMutation = useCreateBrand();
-  const updateBrandMutation = useUpdateBrand();
+  category,
+}: CategoryDialogProps) {
+  const createCategoryMutation = useCreateCategory();
+  const updateCategoryMutation = useUpdateCategory();
 
   const isEditMode = mode === "edit";
 
   const title = isEditMode
-    ? "Edit Brand"
-    : "Add Brand";
+    ? "Edit Category"
+    : "Add Category";
 
   const description = isEditMode
-    ? "Update brand details and save your changes."
-    : "Create a new brand by filling the details below.";
+    ? "Update category details and save your changes."
+    : "Create a new category by filling the details below.";
 
-  const formId = `brand-form-${mode}`;
+  const formId = `category-form-${mode}`;
 
   const isSubmitting =
-    createBrandMutation.isPending ||
-    updateBrandMutation.isPending;
+    createCategoryMutation.isLoading ||
+    updateCategoryMutation.isLoading;
 
   const mutationError =
-    createBrandMutation.error ??
-    updateBrandMutation.error;
+    createCategoryMutation.error ??
+    updateCategoryMutation.error;
 
   const errorMessage =
     mutationError instanceof Error
@@ -42,16 +42,18 @@ export function BrandDialog({
       : null;
 
   const handleSubmit = async (
-    values: BrandFormValues
+    values: CategoryFormValues
   ) => {
     try {
-      if (isEditMode && brand) {
-        await updateBrandMutation.mutateAsync({
-          id: brand.id,
+      if (isEditMode && category) {
+        await updateCategoryMutation.updateCategoryMutationAsync({
+          id: category.id,
           data: values,
         });
       } else {
-        await createBrandMutation.mutateAsync(values);
+        await createCategoryMutation.createCategoryMutationAsync(
+          values
+        );
       }
 
       onOpenChange(false);
@@ -68,12 +70,12 @@ export function BrandDialog({
       description={description}
     >
       <div className="space-y-5">
-        <BrandForm
+        <CategoryForm
           mode={mode}
-          brand={brand}
+          category={category}
           formId={formId}
-          errorMessage={errorMessage}
           onSubmit={handleSubmit}
+          errorMessage={errorMessage}
         />
 
         <EntityDialogFooter
@@ -81,7 +83,7 @@ export function BrandDialog({
           formId={formId}
           isLoading={isSubmitting}
           onCancel={() => onOpenChange(false)}
-          createLabel="Create brand"
+          createLabel="Create category"
           createLoadingLabel="Creating..."
           editLabel="Save changes"
           editLoadingLabel="Saving..."
