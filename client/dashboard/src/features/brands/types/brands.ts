@@ -21,3 +21,9 @@ export interface BrandPayload {
 
 export type BrandsResponse =
   PaginatedResponse<Brand>;
+
+export interface DeleteBrandDialogProps {
+  brandId: number;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}

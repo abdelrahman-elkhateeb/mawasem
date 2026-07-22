@@ -2,6 +2,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
+import { BrandActions } from "@/features/brands/components/brand-actions";
 import type { Brand } from "@/features/brands/types/brands";
 
 
@@ -44,5 +45,18 @@ export const brandColumns: ColumnDef<Brand>[] = [
         </Badge>
       );
     },
+  },
+
+  {
+    id: "actions",
+    header: "",
+
+    cell: ({ row }) => (
+      <div className="flex justify-end">
+        <BrandActions
+          brandId={row.original.id}
+        />
+      </div>
+    ),
   },
 ];
