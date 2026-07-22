@@ -8,6 +8,19 @@ public sealed class LocalProductImageStorage
     : IProductImageStorage
 {
     private const int BufferSize = 81920;
+    private const int MaximumSignatureLength = 12;
+
+    private static readonly byte[] PngSignature =
+    {
+        0x89,
+        0x50,
+        0x4E,
+        0x47,
+        0x0D,
+        0x0A,
+        0x1A,
+        0x0A
+    };
 
     private readonly string _rootPath;
     private readonly string _requestPath;
@@ -66,8 +79,30 @@ public sealed class LocalProductImageStorage
                 nameof(content));
         }
 
+        var normalizedContentType =
+            NormalizeContentType(contentType);
+
         var extension =
-            GetExtension(contentType);
+            GetExtension(normalizedContentType);
+
+        var signatureBuffer =
+            new byte[MaximumSignatureLength];
+
+        var signatureLength =
+            await ReadSignatureAsync(
+                content ,
+                signatureBuffer ,
+                cancellationToken);
+
+        if ( !HasExpectedSignature(
+                normalizedContentType ,
+                signatureBuffer.AsSpan(
+                    0 ,
+                    signatureLength)) )
+        {
+            throw new InvalidDataException(
+                "The product image content does not match the declared content type.");
+        }
 
         var storageKey =
             $"{productId}/{Guid.NewGuid():N}{extension}";
@@ -91,6 +126,12 @@ public sealed class LocalProductImageStorage
                     FileShare.None ,
                     BufferSize ,
                     FileOptions.Asynchronous);
+
+            await destination.WriteAsync(
+                signatureBuffer.AsMemory(
+                    0 ,
+                    signatureLength) ,
+                cancellationToken);
 
             await content.CopyToAsync(
                 destination ,
@@ -168,18 +209,82 @@ public sealed class LocalProductImageStorage
         return filePath;
     }
 
+    private static async Task<int>
+        ReadSignatureAsync(
+            Stream content ,
+            byte[] signatureBuffer ,
+            CancellationToken cancellationToken )
+    {
+        var totalBytesRead = 0;
+
+        while ( totalBytesRead <
+                signatureBuffer.Length )
+        {
+            var bytesRead =
+                await content.ReadAsync(
+                    signatureBuffer.AsMemory(
+                        totalBytesRead ,
+                        signatureBuffer.Length -
+                        totalBytesRead) ,
+                    cancellationToken);
+
+            if ( bytesRead == 0 )
+            {
+                break;
+            }
+
+            totalBytesRead += bytesRead;
+        }
+
+        return totalBytesRead;
+    }
+
+    private static bool HasExpectedSignature(
+        string contentType ,
+        ReadOnlySpan<byte> signature )
+    {
+        return contentType switch
+        {
+            "image/jpeg" =>
+                signature.Length >= 3 &&
+                signature[0] == 0xFF &&
+                signature[1] == 0xD8 &&
+                signature[2] == 0xFF,
+
+            "image/png" =>
+                signature.StartsWith(
+                    PngSignature),
+
+            "image/webp" =>
+                signature.Length >= 12 &&
+                signature[0] == (byte)'R' &&
+                signature[1] == (byte)'I' &&
+                signature[2] == (byte)'F' &&
+                signature[3] == (byte)'F' &&
+                signature[8] == (byte)'W' &&
+                signature[9] == (byte)'E' &&
+                signature[10] == (byte)'B' &&
+                signature[11] == (byte)'P',
+
+            _ => false
+        };
+    }
+
+    private static string NormalizeContentType(
+        string contentType )
+    {
+        return contentType
+            .Split(
+                ';' ,
+                StringSplitOptions.RemoveEmptyEntries)[0]
+            .Trim()
+            .ToLowerInvariant();
+    }
+
     private static string GetExtension(
         string contentType )
     {
-        var normalizedContentType =
-            contentType
-                .Split(
-                    ';' ,
-                    StringSplitOptions.RemoveEmptyEntries)[0]
-                .Trim()
-                .ToLowerInvariant();
-
-        return normalizedContentType switch
+        return contentType switch
         {
             "image/jpeg" => ".jpg",
             "image/png" => ".png",
