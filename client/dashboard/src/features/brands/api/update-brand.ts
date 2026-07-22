@@ -1,10 +1,5 @@
 import { api } from "@/lib/axios";
-import type { Brand, BrandPayload } from "../types/brand";
-
-interface UpdateBrandParams {
-  id: number;
-  data: BrandPayload;
-}
+import type { Brand, UpdateBrandParams } from "../types/brand";
 
 export async function updateBrand({
   id,

@@ -19,11 +19,10 @@ export interface BrandPayload {
   isActive: boolean;
 }
 
+export interface UpdateBrandParams {
+  id: number;
+  data: BrandPayload;
+}
+
 export type BrandsResponse =
   PaginatedResponse<Brand>;
-
-export interface DeleteBrandDialogProps {
-  brandId: number;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}

@@ -54,7 +54,7 @@ export const brandColumns: ColumnDef<Brand>[] = [
     cell: ({ row }) => (
       <div className="flex justify-end">
         <BrandActions
-          brandId={row.original.id}
+          brand={row.original}
         />
       </div>
     ),

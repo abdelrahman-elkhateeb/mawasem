@@ -9,11 +9,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { BrandDialog } from "./brand-dialog";
 import { DeleteBrandDialog } from "./delete-brand-dialog";
+import type { BrandActionsProps } from "./types";
 
 
-export function BrandActions(brandId: number) {
-  const [isDialogOpen, setIsDialogOpen] =
+export function BrandActions({
+  brand,
+}: BrandActionsProps) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] =
+    useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] =
     useState(false);
 
   return (
@@ -31,28 +37,35 @@ export function BrandActions(brandId: number) {
 
         <DropdownMenuContent align="end">
           <DropdownMenuItem
-            variant="destructive"
             onClick={() =>
-              setIsDialogOpen(true)
-            }
-          >
-            Delete Brand
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() =>
-              setIsDialogOpen(true)
+              setIsEditDialogOpen(true)
             }
           >
             Edit Brand
           </DropdownMenuItem>
+
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() =>
+              setIsDeleteDialogOpen(true)
+            }
+          >
+            Delete Brand
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
+      <BrandDialog
+        mode="edit"
+        brand={brand}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+      />
+
       <DeleteBrandDialog
-        brandId={brandId}
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        brandId={brand.id}
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
       />
     </>
   );

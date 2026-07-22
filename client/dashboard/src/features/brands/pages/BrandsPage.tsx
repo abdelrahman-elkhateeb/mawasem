@@ -8,6 +8,7 @@ import { normalizeArabic } from "@/lib/normalize-arabic";
 
 import { useBrands } from "../hooks/use-brands";
 import { brandColumns } from "@/components/entity-table/columns/brand-columns";
+import { BrandDialog } from "../components/brand-dialog";
 
 
 export function BrandsPage() {
@@ -23,6 +24,8 @@ export function BrandsPage() {
 
   const [requestedPageNumber, setRequestedPageNumber] =
     useState(1);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] =
+    useState(false);
 
   const {
     data,
@@ -62,7 +65,7 @@ export function BrandsPage() {
   };
 
   const handleAddBrand = () => {
-    console.log("Open add dialog");
+    setIsCreateDialogOpen(true);
   };
 
   return (
@@ -95,6 +98,12 @@ export function BrandsPage() {
         page={currentPage}
         totalPages={totalPages}
         onPageChange={handlePageChange}
+      />
+
+      <BrandDialog
+        mode="create"
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
       />
     </div>
   );
