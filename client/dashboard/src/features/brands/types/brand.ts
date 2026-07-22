@@ -1,4 +1,4 @@
-import type { PaginatedResponse } from "./pagination";
+import type { PaginatedResponse } from "@/types/pagination";
 
 export interface Brand {
   id: number;

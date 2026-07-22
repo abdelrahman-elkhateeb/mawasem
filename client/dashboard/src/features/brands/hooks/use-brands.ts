@@ -1,16 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { getBrands } from "../api/get-brands";
-
-interface UseBrandsParams {
-  search?: string;
-  isActive?: boolean;
-  includeDeleted?: boolean;
-  pageNumber: number;
-  pageSize: number;
-}
+import type { BrandQueryParams } from "../types/brand-query-params";
 
 export function useBrands(
-  params: UseBrandsParams
+  params: BrandQueryParams
 ) {
   const {
     data,

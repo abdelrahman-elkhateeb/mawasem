@@ -1,14 +1,7 @@
 import { api } from "@/lib/axios";
-import type { PaginatedResponse } from "../types/pagination";
-import type { Brand } from "../types/brands";
-
-interface GetBrandsParams {
-  search?: string;
-  isActive?: boolean;
-  includeDeleted?: boolean;
-  pageNumber: number;
-  pageSize: number;
-}
+import type { PaginatedResponse } from "@/types/pagination";
+import type { BrandQueryParams } from "../types/brand-query-params";
+import type { Brand } from "../types/brand";
 
 export async function getBrands({
   search,
@@ -16,7 +9,7 @@ export async function getBrands({
   includeDeleted,
   pageNumber,
   pageSize,
-}: GetBrandsParams) {
+}: BrandQueryParams) {
   const response =
     await api.get<
       PaginatedResponse<Brand>

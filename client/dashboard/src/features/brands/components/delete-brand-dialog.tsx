@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 import { useDeleteBrand } from "../hooks/use-delete-brand";
-import type { DeleteBrandDialogProps } from "../types/brands";
+import type { DeleteBrandDialogProps } from "../types/brand";
 
 
 export function DeleteBrandDialog({

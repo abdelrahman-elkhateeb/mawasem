@@ -3,7 +3,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
 import { BrandActions } from "@/features/brands/components/brand-actions";
-import type { Brand } from "@/features/brands/types/brands";
+import type { Brand } from "@/features/brands/types/brand";
 
 
 export const brandColumns: ColumnDef<Brand>[] = [

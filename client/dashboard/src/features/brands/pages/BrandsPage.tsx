@@ -1,15 +1,25 @@
 import { useState } from "react";
+import { useDebounce } from "use-debounce";
 
 import { EntityTable } from "@/components/entity-table/entity-table";
 import { EntityToolbar } from "@/components/entity-table/entity-toolbar";
 import { EntityPagination } from "@/components/entity-table/entity-pagination";
+import { normalizeArabic } from "@/lib/normalize-arabic";
 
 import { useBrands } from "../hooks/use-brands";
 import { brandColumns } from "@/components/entity-table/columns/brand-columns";
 
 
 export function BrandsPage() {
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+
+  const normalizedSearch =
+    normalizeArabic(searchInput);
+
+  const [debouncedSearch] = useDebounce(
+    normalizedSearch,
+    500
+  );
 
   const [requestedPageNumber, setRequestedPageNumber] =
     useState(1);
@@ -18,7 +28,10 @@ export function BrandsPage() {
     data,
     //  isLoading
   } = useBrands({
-    search,
+    search:
+      debouncedSearch.length > 0
+        ? debouncedSearch
+        : undefined,
     pageNumber: requestedPageNumber,
     pageSize: 10,
   });
@@ -30,7 +43,7 @@ export function BrandsPage() {
   const totalCount = data?.totalCount ?? 0;
 
   const handleSearch = (value: string) => {
-    setSearch(value);
+    setSearchInput(value);
     setRequestedPageNumber(1);
   };
 
@@ -65,7 +78,7 @@ export function BrandsPage() {
       </div>
 
       <EntityToolbar
-        search={search}
+        search={searchInput}
         onSearch={handleSearch}
         buttonText="Add Brand"
         onAdd={handleAddBrand}

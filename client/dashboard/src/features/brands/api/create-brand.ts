@@ -1,5 +1,5 @@
 import { api } from "@/lib/axios";
-import type { Brand, BrandPayload } from "../types/brands";
+import type { Brand, BrandPayload } from "../types/brand";
 
 export async function createBrand(
   data: BrandPayload
