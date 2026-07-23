@@ -1,3 +1,5 @@
+import mawasemLogo from "@/assets/mawasem Logo.png";
+
 export default function HomePage() {
   return (
     <section className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_45%,#f6f7fb_100%)] text-slate-900">
@@ -15,6 +17,16 @@ export default function HomePage() {
 
           <div className="mx-auto max-w-3xl rounded-[2rem] border border-white/80 bg-white/90 p-6 shadow-[0_30px_100px_-50px_rgba(15,23,42,0.35)] backdrop-blur-xl sm:p-10 lg:p-14">
             <div className="text-center">
+              <div className="mb-7 flex justify-center">
+                <div className="rounded-[1.75rem] border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-5 sm:py-4">
+                  <img
+                    src={mawasemLogo}
+                    alt="Mawasem logo"
+                    className="h-20 w-auto sm:h-24"
+                  />
+                </div>
+              </div>
+
               <p className="mb-4 text-xs font-semibold uppercase tracking-[0.4em] text-slate-400 animate-in fade-in-0 slide-in-from-bottom-3 duration-500">
                 A better learning experience is on the way
               </p>
