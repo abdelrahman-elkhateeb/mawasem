@@ -6,27 +6,28 @@ namespace Mawasem.Infrastructure.Persistence.Configurations;
 
 public sealed class CartConfiguration : IEntityTypeConfiguration<Cart>
 {
-    public void Configure(EntityTypeBuilder<Cart> builder)
+    public void Configure( EntityTypeBuilder<Cart> builder )
     {
+        const string ownerCheckConstraintSql =
+            "(\n" +
+            "    [UserId] IS NOT NULL\n" +
+            "    AND [GuestTokenHash] IS NULL\n" +
+            "    AND [GuestExpiresOn] IS NULL\n" +
+            ")\n" +
+            "OR\n" +
+            "(\n" +
+            "    [UserId] IS NULL\n" +
+            "    AND [GuestTokenHash] IS NOT NULL\n" +
+            "    AND [GuestExpiresOn] IS NOT NULL\n" +
+            ")";
+
         builder.ToTable(
-            "Carts",
+            "Carts" ,
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_Carts_Owner",
-                    """
-                    (
-                        [UserId] IS NOT NULL
-                        AND [GuestTokenHash] IS NULL
-                        AND [GuestExpiresOn] IS NULL
-                    )
-                    OR
-                    (
-                        [UserId] IS NULL
-                        AND [GuestTokenHash] IS NOT NULL
-                        AND [GuestExpiresOn] IS NOT NULL
-                    )
-                    """);
+                    "CK_Carts_Owner" ,
+                    ownerCheckConstraintSql);
             });
 
         builder.HasKey(cart => cart.Id);
